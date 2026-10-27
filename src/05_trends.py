@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw" / "trends"
 OUT = ROOT / "data" / "processed" / "trends_monthly.csv"
 
-HEADER_RE = re.compile(r"^(month|monat|time|zeit|woche|week|tag|day)\s*,", re.I)
+HEADER_RE = re.compile(r'^"?(month|monat|time|zeit|woche|week|tag|day)"?\s*,', re.I)
 
 
 def read_export(path: Path) -> pd.DataFrame:

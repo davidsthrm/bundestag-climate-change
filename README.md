@@ -40,17 +40,21 @@ python src/05_trends.py              # -> data/processed/trends_monthly.csv
 
 ### Google Trends export (manual)
 Google Trends has no official API and scrapers get rate-limited, so we export by hand.
-1. Open trends.google.de → *Explore*. Region **Deutschland**, time range **custom: 01.01.2004 – today**
-   (ranges > 5 years return **monthly** values), category *All*, *Web search*.
-2. **Export A** – one entry: the *topic* “Klimawandel” (pick the suggestion labelled *Thema*/*Topic*,
-   not the search term). Save as `data/raw/trends/A_topic_klimawandel.csv`.
-3. **Export B** – search terms requested together: `Klimawandel`, `Klimaschutz`, `Klimakrise`,
-   `Erderwärmung`, `Hitzewelle`. Save as `data/raw/trends/B_terms.csv`.
-4. Note the export date in the file name or in `data/raw/MANIFEST.csv`.
+Each file is **one entry requested alone**, so each has its own 0–100 scale.
+Settings: trends.google.de → *Entdecken*, region **Deutschland**, custom range **01.01.2004 – last day of
+the last complete month** (ranges > 5 years return monthly values), *Alle Kategorien*, *Websuche*.
+Download via the ↓ icon of "Interesse im zeitlichen Verlauf".
 
-Values are relative (0–100) *within one export* only. Google samples the data, so a re-export
-on another day can differ slightly; for robustness export B a second time on a different day
-(`B_terms_2.csv`) and check the correlation.
+| File in `data/raw/trends/` | Entry | Role |
+|---|---|---|
+| `A_term_klimawandel.csv`  | Klimawandel (Suchbegriff) | main variable: public attention to climate change |
+| `B_topic_klimaschutz.csv` | Klimaschutz (Thema) | policy-driven attention |
+| `B_topic_hitzewelle.csv`  | Hitzewelle (Thema)  | weather-driven attention |
+| `B_topic_klima.csv`       | Klima (Thema)       | broad climate attention |
+
+Note the export date in `data/raw/MANIFEST.csv`. Google samples the data, so a re-export on another
+day can differ slightly; for robustness export A a second time on a different day
+(`A_term_klimawandel_2.csv`) and check the correlation.
 
 ### Known caveats
 - PoliCorp transcripts are split into **sentences**, not paragraphs (`text_raw` = list of sentences
@@ -59,6 +63,14 @@ on another day can differ slightly; for robustness export B a second time on a d
   its own parser and party mapping (fraction names) in step 1.
 - GISTEMP anomalies are relative to 1951–1980; `04_temperature.py` re-baselines both series
   to 1991–2020 per calendar month.
+- The climate-change topics ("Klimawandel", "Global warming") are 0 in Germany from 2017 to 2020,
+  so the main variable is the *search term* Klimawandel.
+- `B_topic_klima`: level jump ×3 in Nov 2016, when the climate-change topics drop to 0 (likely Google
+  re-assigning searches between topics). Use a break marker from 2016-11.
+- One-week spikes: Klimawandel 17–24 Apr 2022 (= 100), Klimaschutz Apr 2023 (= 100). Kept in the data;
+  check results with and without these months.
+- `B_topic_hitzewelle` is dominated by summer 2026 (= 100); values before 2018 are mostly 0–3.
+- Google changed its data collection on 1 Jan 2011, 2016, 2017 and 2022 (marked "Hinweis" in Trends).
 
 ## Setup
 ```bash
