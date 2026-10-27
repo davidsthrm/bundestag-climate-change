@@ -1,0 +1,28 @@
+# data (keep folder structure only)
+/data/**
+!/data/**/
+!/data/**/.gitkeep
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# secrets / OS / editors
+.env
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# model caches
+models/
+*.bin
+*.safetensors

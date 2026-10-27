@@ -1,0 +1,13 @@
+pandas>=2.2
+numpy
+pyarrow
+pyyaml
+requests
+matplotlib
+seaborn
+statsmodels
+scikit-learn
+jupyter
+# for stance detection (step 3) – install when you get there:
+# torch
+# transformers

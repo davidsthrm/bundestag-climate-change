@@ -1,0 +1,4 @@
+start_date: "2005-10-18"   # constitution of the 16th Bundestag
+end_date: null             # null = latest available
+time_grain: "M"            # monthly
+unit_of_analysis: "paragraph"

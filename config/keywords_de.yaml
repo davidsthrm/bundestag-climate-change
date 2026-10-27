@@ -1,0 +1,32 @@
+# Climate keyword dictionary (relevance filter, NOT stance).
+# Matched case-insensitively on lemmas/lowercased text. Extend as you go.
+core:
+  - klimawandel
+  - klimakrise
+  - klimaschutz
+  - klimaziel
+  - klimaneutral
+  - erderwärmung
+  - erderhitzung
+  - globale erwärmung
+  - treibhausgas
+  - treibhauseffekt
+  - co2
+  - kohlendioxid
+  - pariser abkommen
+  - klimaabkommen
+energy:            # weaker signal – only count together with a core term?
+  - erneuerbare energien
+  - energiewende
+  - kohleausstieg
+  - windkraft
+  - windräder
+  - photovoltaik
+  - emissionshandel
+  - co2-preis
+  - co2-steuer
+sceptic_markers:   # helpful later for stance validation, not for filtering
+  - klimahysterie
+  - klimareligion
+  - klimapanik
+  - klimaideologie
