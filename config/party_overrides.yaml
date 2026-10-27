@@ -1,0 +1,61 @@
+# Manual party assignments for speakers whose party PoliCorp leaves empty or wrong.
+# Used by src/01_speeches.py before all other party rules.
+#   speaker_id     PoliCorp speaker_id
+#   party          one of: CDU/CSU, SPD, GRÜNE, FDP, DIE LINKE, AfD, BSW, fraktionslos
+#   until          last day the entry applies (optional)
+#   name_contains  only apply if the speaker name contains this text (optional, for wrong IDs)
+# Checked against the data and, where needed, web sources on 2026-10-27.
+
+overrides:
+  # --- Party switchers. parliamentarians.json keeps only the last group of a period,
+  #     so the party before the switch is set here (until = day before the new group starts).
+  - {speaker_id: 11003702, party: FDP,       until: "2024-11-07"}  # Volker Wissing, left FDP
+  - {speaker_id: 11005222, party: GRÜNE,     until: "2024-07-08"}  # Melis Sekmen, Greens -> CDU/CSU
+  - {speaker_id: 11004103, party: DIE LINKE, until: "2023-10-09"}  # Thomas Lutze, Linke -> SPD
+  - {speaker_id: 11003602, party: CDU/CSU,   until: "2021-03-06"}  # Georg Nüßlein (CSU)
+  - {speaker_id: 11004805, party: CDU/CSU,   until: "2021-03-07"}  # Nikolas Löbel (CDU)
+  - {speaker_id: 11002808, party: CDU/CSU,   until: "2017-01-14"}  # Erika Steinbach (CDU)
+  - {speaker_id: 11004760, party: AfD,       until: "2021-06-24"}  # Bruno Hollnagel
+  - {speaker_id: 11004751, party: AfD,       until: "2021-08-23"}  # Heiko Heßenkemper
+  - {speaker_id: 11004748, party: AfD,       until: "2019-12-17"}  # Lars Herrmann
+  - {speaker_id: 11004737, party: AfD,       until: "2020-01-26"}  # Verena Hartmann
+  - {speaker_id: 11004847, party: AfD,       until: "2020-11-14"}  # Frank Pasemann
+  - {speaker_id: 11004772, party: AfD,       until: "2018-12-30"}  # Uwe Kamann
+  - {speaker_id: 11003819, party: DIE LINKE, until: "2012-12-12"}  # Wolfgang Nešković
+
+  # --- PDS in the 15th Bundestag: 2 MPs without group status, counted as DIE LINKE (same party).
+  - {speaker_id: 11003584, party: DIE LINKE, until: "2005-10-17"}  # Gesine Lötzsch
+
+  # --- Wrong speaker_id in PoliCorp (ID belongs to another person).
+  - {speaker_id: 11005304, party: SPD, name_contains: "Mende"}     # Dirk-Ulrich Mende (ID of a CDU MP)
+  - {speaker_id: 11002017, party: CDU/CSU}                         # Thomas Schmidt, state minister Saxony (ID of a former DSU MP)
+
+  # --- Federal government members who are not MPs.
+  - {speaker_id: 999990120, party: SPD}      # Klara Geywitz
+  - {speaker_id: 999990122, party: GRÜNE}    # Anne Spiegel
+  - {speaker_id: 999990146, party: SPD}      # Jörg Kukies
+  # Mehmet Daimagüler (999990142, federal commissioner): current party unclear -> left unknown.
+
+  # --- State politicians (labelled as government in PoliCorp).
+  - {speaker_id: 999990078, party: FDP}        # Joachim Stamp (NRW)
+  - {speaker_id: 999990082, party: SPD}        # Dietmar Woidke (Brandenburg)
+  - {speaker_id: 999990094, party: CDU/CSU}    # Reiner Haseloff (Sachsen-Anhalt, CDU)
+  - {speaker_id: 999990099, party: SPD}        # Manuela Schwesig (Mecklenburg-Vorpommern)
+  - {speaker_id: 999990124, party: SPD}        # Andreas Bovenschulte (Bremen)
+  - {speaker_id: 999990125, party: CDU/CSU}    # Sven Schulze (Sachsen-Anhalt, CDU)
+  - {speaker_id: 999990127, party: CDU/CSU}    # Peter Beuth (Hessen, CDU)
+  - {speaker_id: 999990131, party: SPD}        # Jörg Steinbach (Brandenburg; non-party when appointed 2018, later SPD)
+  - {speaker_id: 999990133, party: SPD}        # Anke Rehlinger (Saarland)
+  - {speaker_id: 999990134, party: DIE LINKE}  # Lena Kreck (Berlin; name garbled in PoliCorp)
+  - {speaker_id: 999990136, party: SPD}        # Daniela Behrens (Niedersachsen)
+  - {speaker_id: 999990137, party: GRÜNE}      # Bettina Jarasch (Berlin)
+  - {speaker_id: 999990138, party: CDU/CSU}    # Roman Poseck (Hessen, CDU)
+  - {speaker_id: 999990140, party: CDU/CSU}    # Kristina Sinemus (Hessen, CDU)
+  - {speaker_id: 999990141, party: CDU/CSU}    # Judith Gerlach (Bayern, CSU)
+  - {speaker_id: 999990143, party: CDU/CSU}    # Marion Gentges (Baden-Württemberg, CDU)
+  - {speaker_id: 999990144, party: CDU/CSU}    # Felor Badenberg (Berlin; non-party 2023, CDU since 2024)
+  - {speaker_id: 999990145, party: SPD}        # Christian Pegel (Mecklenburg-Vorpommern)
+  - {speaker_id: 999990147, party: CDU/CSU}    # Markus Söder (Bayern, CSU)
+  - {speaker_id: 999990148, party: SPD}        # Stephan Weil (Niedersachsen)
+  - {speaker_id: 999990149, party: SPD}        # Alexander Schweitzer (Rheinland-Pfalz)
+  - {speaker_id: 999990150, party: CDU/CSU}    # Boris Rhein (Hessen, CDU)

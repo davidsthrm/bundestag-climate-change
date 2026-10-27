@@ -3,13 +3,13 @@
 
 policorp:
   # PoliCorp-GermaParl2-PLUS (Zenodo, CC BY 4.0), DOI 10.5281/zenodo.21295610
-  # Legislative periods 1-20 (1949 - Feb 2025), sentence-level transcripts with party.
+  # Legislative periods 1-20 (1949 - 18 Mar 2025), sentence-level transcripts with party.
   zip_url: "https://zenodo.org/records/21295610/files/germaparl2-plus_lp_subsets.zip?download=1"
   doc_url: "https://zenodo.org/records/21295610/files/PoliCorp-GermaParl2-PLUS_metadata_description.pdf?download=1"
   legislative_periods: [15, 16, 17, 18, 19, 20]   # 15th Bundestag (2002-10-17 – 2005-10-18) covers 2004
 
 bundestag_wp21:
-  # PoliCorp stops at the end of the 20th Bundestag (Feb 2025). The 21st Bundestag
+  # PoliCorp stops at the end of the 20th Bundestag (last session 18 Mar 2025). The 21st Bundestag
   # (since 2025-03-25) is taken directly from Bundestag Open Data (XML, DTD from WP19).
   opendata_page: "https://www.bundestag.de/services/opendata"
   wahlperiode: 21

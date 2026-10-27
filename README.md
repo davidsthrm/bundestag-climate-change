@@ -22,7 +22,7 @@ signal** (temperatures in Germany and globally) or **public attention**
 ## Data sources
 | Data | Source | Coverage | How we get it |
 |------|--------|----------|---------------|
-| Plenary speeches WP15–20 | PoliCorp-GermaParl2-PLUS, Zenodo [10.5281/zenodo.21295610](https://doi.org/10.5281/zenodo.21295610), CC BY 4.0 | 1949 – Feb 2025, sentence-level, with party | `src/00_download.py policorp` |
+| Plenary speeches WP15–20 | PoliCorp-GermaParl2-PLUS, Zenodo [10.5281/zenodo.21295610](https://doi.org/10.5281/zenodo.21295610), CC BY 4.0 | 1949 – 18 Mar 2025, sentence-level, with party | `src/00_download.py policorp` |
 | Plenary speeches WP21 | Bundestag Open Data, plenary protocol XML | since 25 Mar 2025 | `src/00_download.py wp21` |
 | Temperature Germany | DWD Climate Data Center, regional averages, monthly mean air temperature (area mean Deutschland) | 1881 – last month | `src/00_download.py temperature` |
 | Temperature global | NASA GISTEMP v4, global land-ocean index | 1880 – last month | `src/00_download.py temperature` |
@@ -59,7 +59,7 @@ day can differ slightly; for robustness export A a second time on a different da
 ### Known caveats
 - PoliCorp transcripts are split into **sentences**, not paragraphs (`text_raw` = list of sentences
   with `type` speech / interjection / call to order). Interjections must be filtered out.
-- PoliCorp ends with the 20th Bundestag (Feb 2025); WP21 comes from the Bundestag XML and needs
+- PoliCorp ends with the 20th Bundestag (last session 18 Mar 2025); WP21 comes from the Bundestag XML and needs
   its own parser and party mapping (fraction names) in step 1.
 - GISTEMP anomalies are relative to 1951–1980; `04_temperature.py` re-baselines both series
   to 1991–2020 per calendar month.

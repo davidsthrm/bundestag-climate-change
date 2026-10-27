@@ -82,7 +82,7 @@ See `README.md` for pipeline and data sources, `config/` for settings, keywords 
 - Every download is logged in `data/raw/MANIFEST.csv` (URL, access time, SHA-256).
 
 ## Key decisions
-- Speeches: PoliCorp-GermaParl2-PLUS (15th–20th Bundestag, ends Feb 2025) is the main corpus,
+- Speeches: PoliCorp-GermaParl2-PLUS (15th–20th Bundestag, ends 18 Mar 2025) is the main corpus,
   incl. its party mapping.
 - Speeches of the 21st Bundestag come from the official Bundestag Open Data XML and are converted
   into PoliCorp's format (same fields, sentence-level `text_raw`, party names mapped to PoliCorp

@@ -145,7 +145,7 @@ def get_wp21() -> None:
     s = requests.Session()
     page = s.get(cfg["opendata_page"], headers=HEADERS, timeout=60)
     page.raise_for_status()
-    loaders = sorted(set(re.findall(r'data-dataloader-url="([^"]+)"', page.text)))
+    loaders = sorted(set(re.findall(r'/ajax/filterlist/[^"&\s]+', page.text)))
     if not loaders:
         raise SystemExit("No AJAX file lists found on the open data page - layout changed? "
                          "Download the WP21 XMLs manually into " + str(out))

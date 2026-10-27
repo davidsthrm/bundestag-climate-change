@@ -2,3 +2,4 @@ start_date: "2004-01-01"   # first month with Google Trends data
 end_date: null             # null = latest available
 time_grain: "M"            # monthly
 unit_of_analysis: "paragraph"
+speaker_roles: [mp, government, federal_council]   # PoliCorp roles kept (not: presidency, misc, parliamentary_commissioner)
