@@ -13,6 +13,15 @@ bundestag_wp21:
   # (since 2025-03-25) is taken directly from Bundestag Open Data (XML, DTD from WP19).
   opendata_page: "https://www.bundestag.de/services/opendata"
   wahlperiode: 21
+  # 20th Bundestag sessions that are also in PoliCorp, to validate the XML converter
+  # (URLs from PoliCorp's source_file field).
+  validation_files:
+    - "https://www.bundestag.de/resource/blob/866350/ec2231feaa8519c8db90a4f657ea2c67/20001.xml"
+    - "https://www.bundestag.de/resource/blob/945536/6e01d454929a0c31a6b0a22429a1d278/20100.xml"
+    - "https://dserver.bundestag.de/btp/20/20214.xml"
+  # Official MP master data, incl. group memberships in the 21st Bundestag
+  # (PoliCorp's parliamentarians.json stops at the 20th).
+  mdb_stammdaten_url: "https://www.bundestag.de/resource/blob/472878/MdB-Stammdaten.zip"
 
 dwd:
   # DWD Climate Data Center: area mean ("Gebietsmittel") of monthly mean air temperature.

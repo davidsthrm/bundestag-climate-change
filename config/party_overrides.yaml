@@ -1,27 +1,13 @@
 # Manual party assignments for speakers whose party PoliCorp leaves empty or wrong.
 # Used by src/01_speeches.py before all other party rules.
 #   speaker_id     PoliCorp speaker_id
-#   party          one of: CDU/CSU, SPD, GRÜNE, FDP, DIE LINKE, AfD, BSW, fraktionslos
+#   party          one of: CDU/CSU, SPD, GRÜNE, FDP, DIE LINKE, AfD, BSW, fraktionslos, parteilos
 #   until          last day the entry applies (optional)
 #   name_contains  only apply if the speaker name contains this text (optional, for wrong IDs)
 # Checked against the data and, where needed, web sources on 2026-10-27.
 
 overrides:
-  # --- Party switchers. parliamentarians.json keeps only the last group of a period,
-  #     so the party before the switch is set here (until = day before the new group starts).
-  - {speaker_id: 11003702, party: FDP,       until: "2024-11-07"}  # Volker Wissing, left FDP
-  - {speaker_id: 11005222, party: GRÜNE,     until: "2024-07-08"}  # Melis Sekmen, Greens -> CDU/CSU
-  - {speaker_id: 11004103, party: DIE LINKE, until: "2023-10-09"}  # Thomas Lutze, Linke -> SPD
-  - {speaker_id: 11003602, party: CDU/CSU,   until: "2021-03-06"}  # Georg Nüßlein (CSU)
-  - {speaker_id: 11004805, party: CDU/CSU,   until: "2021-03-07"}  # Nikolas Löbel (CDU)
-  - {speaker_id: 11002808, party: CDU/CSU,   until: "2017-01-14"}  # Erika Steinbach (CDU)
-  - {speaker_id: 11004760, party: AfD,       until: "2021-06-24"}  # Bruno Hollnagel
-  - {speaker_id: 11004751, party: AfD,       until: "2021-08-23"}  # Heiko Heßenkemper
-  - {speaker_id: 11004748, party: AfD,       until: "2019-12-17"}  # Lars Herrmann
-  - {speaker_id: 11004737, party: AfD,       until: "2020-01-26"}  # Verena Hartmann
-  - {speaker_id: 11004847, party: AfD,       until: "2020-11-14"}  # Frank Pasemann
-  - {speaker_id: 11004772, party: AfD,       until: "2018-12-30"}  # Uwe Kamann
-  - {speaker_id: 11003819, party: DIE LINKE, until: "2012-12-12"}  # Wolfgang Nešković
+  # (Party switchers need no entry: the MP master data has dated group memberships.)
 
   # --- PDS in the 15th Bundestag: 2 MPs without group status, counted as DIE LINKE (same party).
   - {speaker_id: 11003584, party: DIE LINKE, until: "2005-10-17"}  # Gesine Lötzsch
@@ -34,7 +20,13 @@ overrides:
   - {speaker_id: 999990120, party: SPD}      # Klara Geywitz
   - {speaker_id: 999990122, party: GRÜNE}    # Anne Spiegel
   - {speaker_id: 999990146, party: SPD}      # Jörg Kukies
+  - {speaker_id: 11003209,  party: CDU/CSU}  # Katherina Reiche (21st; former MP, CDU)
+  - {speaker_id: 999990151, party: SPD}      # Stefanie Hubig (21st)
+  - {speaker_id: 999990152, party: CDU/CSU}  # Karin Prien (21st, CDU)
+  - {speaker_id: 999990153, party: CDU/CSU}  # Karsten Wildberger (21st; non-party when appointed, CDU since May 2025)
+  - {speaker_id: 999990154, party: parteilos}  # Wolfram Weimer (21st, minister of state for culture, never a party member)
   # Mehmet Daimagüler (999990142, federal commissioner): current party unclear -> left unknown.
+  # Ronald Rauhe (999990161, minister of state for sport since Sep 2026): party not found -> left unknown.
 
   # --- State politicians (labelled as government in PoliCorp).
   - {speaker_id: 999990078, party: FDP}        # Joachim Stamp (NRW)
@@ -59,3 +51,8 @@ overrides:
   - {speaker_id: 999990148, party: SPD}        # Stephan Weil (Niedersachsen)
   - {speaker_id: 999990149, party: SPD}        # Alexander Schweitzer (Rheinland-Pfalz)
   - {speaker_id: 999990150, party: CDU/CSU}    # Boris Rhein (Hessen, CDU)
+  - {speaker_id: 999990155, party: CDU/CSU}    # Nicole Hoffmeister-Kraut (Baden-Württemberg, CDU)
+  - {speaker_id: 11001294,  party: CDU/CSU}    # Karl-Josef Laumann (NRW, CDU; former MP)
+  - {speaker_id: 999990156, party: GRÜNE}      # Katrin Eder (Rheinland-Pfalz)
+  - {speaker_id: 999990157, party: CDU/CSU}    # Christian Heinz (Hessen, CDU)
+  - {speaker_id: 999990158, party: CDU/CSU}    # Regina Kraushaar (Sachsen, CDU since 2008)

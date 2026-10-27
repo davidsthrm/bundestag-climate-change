@@ -4,7 +4,7 @@ Usage (from repo root):
     python src/00_download.py               # everything
     python src/00_download.py temperature   # only DWD + GISTEMP (small, ~1 MB)
     python src/00_download.py policorp      # PoliCorp zip (~880 MB) + extract LP 15-20
-    python src/00_download.py wp21          # 21st Bundestag XML protocols
+    python src/00_download.py wp21          # 21st Bundestag XML protocols + 3 WP20 sessions (validation) + MdB master data
 
 Already downloaded files are skipped (delete them to refresh).
 Every download is logged with URL, access time and SHA-256 in data/raw/MANIFEST.csv
@@ -175,6 +175,9 @@ def get_wp21() -> None:
         download(url, out / name, session=s)
         time.sleep(0.3)
     print(f"  {len(links)} WP{wp} protocols in {out.relative_to(ROOT)}")
+    for url in cfg["validation_files"]:
+        download(url, out.parent / "bundestag_wp20_validation" / Path(url).name, session=s)
+    download(cfg["mdb_stammdaten_url"], out.parent / "MdB-Stammdaten.zip", session=s)
 
 
 TASKS = {"temperature": get_temperature, "policorp": get_policorp, "wp21": get_wp21}
