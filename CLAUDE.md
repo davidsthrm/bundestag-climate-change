@@ -67,9 +67,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project
 Student project for a university NLP module (paper + presentation, team of two).
-Research question: does the Bundestag's attention to climate change follow the physical climate
-signal (temperature Germany + global) or public attention (Google Trends)? Period 2004-01 (start
-of Google Trends) to today, monthly. Extension: party comparison incl. stance (pro climate action / neutral / contra).
+Working title: Heat Without Debate? Parliamentary Attention to Climate Change in the German Bundestag
+
+Research question: Do the attention to and tone of climate change debates in the Bundestag follow the physical climate signal or public attention? 
+
+Period 2004-01 (start of Google Trends) to today, monthly. Extension: party comparison incl. stance (pro climate action / neutral / contra).
 See `README.md` for pipeline and data sources, `config/` for settings, keywords and URLs.
 
 ## Working rules
