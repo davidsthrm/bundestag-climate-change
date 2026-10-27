@@ -4,6 +4,7 @@ Input : data/raw/speeches/policorp/policorp_lp-*.json   (periods: config/sources
         data/interim/wp21_policorp.json                 (21st Bundestag, from src/01a_wp21_to_policorp.py)
         data/raw/speeches/MdB-Stammdaten.zip            (official MP master data, group memberships)
         config/party_overrides.yaml
+        config/governments.yaml                         (coalition parties per date)
 Output: data/interim/sentences.parquet
         One row per sentence of type "speech" (interjections and calls to order are dropped),
         only speaker roles from config/settings.yaml (MPs, government, Bundesrat).
@@ -15,6 +16,10 @@ Party (parliamentary group label), first rule that applies wins:
    Linke and BSW groups started on 2 Feb 2024; that gap gets the group they joined afterwards.
 3. the party label in the speech data (PoliCorp, or <fraktion> in the XML)
 CDU and CSU are merged into CDU/CSU. If nothing applies, party stays empty.
+
+party_in_government: True if the speaker's party is a federal coalition party on the speech date
+(config/governments.yaml), False otherwise (also fraktionslos/parteilos), empty if the party is unknown.
+This is about the party, not the person: role == "government" marks members of the government.
 """
 from __future__ import annotations
 
@@ -34,6 +39,7 @@ OUT = ROOT / "data" / "interim" / "sentences.parquet"
 SETTINGS = yaml.safe_load((ROOT / "config" / "settings.yaml").read_text(encoding="utf-8"))
 SOURCES = yaml.safe_load((ROOT / "config" / "sources.yaml").read_text(encoding="utf-8"))
 OVERRIDES = yaml.safe_load((ROOT / "config" / "party_overrides.yaml").read_text(encoding="utf-8"))["overrides"]
+GOVERNMENTS = yaml.safe_load((ROOT / "config" / "governments.yaml").read_text(encoding="utf-8"))["governments"]
 
 # group names in the MP master data -> label
 GROUPS = {
@@ -93,6 +99,13 @@ def party_of(s: dict, name: str, groups: dict, overrides: dict) -> tuple[str | N
     return None, "unknown"
 
 
+def in_government(party: str | None, date: str) -> bool | None:
+    if party is None:
+        return None
+    current = [g for g in GOVERNMENTS if g["from"] <= date]
+    return party in max(current, key=lambda g: g["from"])["parties"]
+
+
 def top_topic(topics: list | None) -> str | None:
     if not topics:
         return None
@@ -124,6 +137,7 @@ def main() -> None:
                 "topic": top_topic(s["topic"]), "role": s["role"],
                 "position": " ".join((s["position"] or "").split()) or None,
                 "speaker_id": s["speaker_id"], "name": name, "party": party, "party_source": source,
+                "party_in_government": in_government(party, s["date"]),
             }
             rows += [{**meta, "seq_no": x["seq_no"], "text": x["text"]}
                      for x in s["text_raw"] if x["type"] == "speech"]
@@ -142,6 +156,11 @@ def main() -> None:
                                      unknown_party_pct=("party", lambda p: round(p.isna().mean() * 100, 2))).to_string())
     print("\nparty:", speeches.party.fillna("<unknown>").value_counts().to_dict())
     print("party source:", speeches.party_source.value_counts().to_dict())
+    print("\nshare of speeches by coalition parties, per government start:")
+    starts = pd.Series([g["from"] for g in GOVERNMENTS])
+    gov_start = starts.searchsorted(speeches.date, side="right") - 1
+    in_gov = speeches.party_in_government.astype("boolean")
+    print(in_gov.groupby(starts[gov_start].values).agg(["size", "mean"]).round(3).to_string())
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ signal** (temperatures in Germany and globally) or **public attention**
 |------|--------|--------|
 | 0 | `src/00_download.py`    | raw data into `data/raw/` (+ MANIFEST.csv) |
 | 1a | `src/01a_wp21_to_policorp.py` | 21st Bundestag XML in PoliCorp format (`data/interim/wp21_policorp.json`) |
-| 1 | `src/01_speeches.py`    | all speeches 2004–today, one row per sentence, with party (`data/interim/sentences.parquet`) |
+| 1 | `src/01_speeches.py`    | all speeches 2004–today, one row per sentence, with party and government/opposition (`config/governments.yaml`) (`data/interim/sentences.parquet`) |
 | 2 | `src/02_relevance.py`   | climate-relevant paragraphs (keyword dictionary) |
 | 3 | `src/03_stance.py`      | stance label per relevant paragraph |
 | 4 | `src/04_temperature.py` | monthly temperature anomalies DE + global |

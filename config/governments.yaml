@@ -1,0 +1,18 @@
+# Federal governments (coalition parties) from start_date on. Used by src/01_speeches.py
+# for the column party_in_government (government vs. opposition).
+#   from     first day (appointment of the cabinet); a government stays in charge until the next
+#            entry, including the caretaker months after an election
+#   parties  labels as in the speech data (CDU/CSU, SPD, GRÜNE, FDP, ...)
+# Sources: entries 2024-11-07 and 2025-05-06 checked against news reports on 2026-10-28; earlier dates
+# still to verify against the Bundestag's "Datenhandbuch", chapter 6 (Bundesregierung).
+# Recheck the last entry before the final analysis (coalition crisis since July 2026).
+
+governments:
+  - {from: "2002-10-22", parties: [SPD, GRÜNE]}           # Schröder II
+  - {from: "2005-11-22", parties: [CDU/CSU, SPD]}         # Merkel I
+  - {from: "2009-10-28", parties: [CDU/CSU, FDP]}         # Merkel II
+  - {from: "2013-12-17", parties: [CDU/CSU, SPD]}         # Merkel III
+  - {from: "2018-03-14", parties: [CDU/CSU, SPD]}         # Merkel IV
+  - {from: "2021-12-08", parties: [SPD, GRÜNE, FDP]}      # Scholz
+  - {from: "2024-11-07", parties: [SPD, GRÜNE]}           # Scholz after the FDP ministers were dismissed (minority)
+  - {from: "2025-05-06", parties: [CDU/CSU, SPD]}         # Merz
