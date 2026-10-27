@@ -1,0 +1,43 @@
+# Download locations for all raw data. Used by src/00_download.py.
+# Access dates are written to data/raw/MANIFEST.csv when a file is downloaded.
+
+policorp:
+  # PoliCorp-GermaParl2-PLUS (Zenodo, CC BY 4.0), DOI 10.5281/zenodo.21295610
+  # Legislative periods 1-20 (1949 - 18 Mar 2025), sentence-level transcripts with party.
+  zip_url: "https://zenodo.org/records/21295610/files/germaparl2-plus_lp_subsets.zip?download=1"
+  doc_url: "https://zenodo.org/records/21295610/files/PoliCorp-GermaParl2-PLUS_metadata_description.pdf?download=1"
+  legislative_periods: [15, 16, 17, 18, 19, 20]   # 15th Bundestag (2002-10-17 – 2005-10-18) covers 2004
+
+bundestag_wp21:
+  # PoliCorp stops at the end of the 20th Bundestag (last session 18 Mar 2025). The 21st Bundestag
+  # (since 2025-03-25) is taken directly from Bundestag Open Data (XML, DTD from WP19).
+  opendata_page: "https://www.bundestag.de/services/opendata"
+  wahlperiode: 21
+  # 20th Bundestag sessions that are also in PoliCorp, to validate the XML converter
+  # (URLs from PoliCorp's source_file field).
+  validation_files:
+    - "https://www.bundestag.de/resource/blob/866350/ec2231feaa8519c8db90a4f657ea2c67/20001.xml"
+    - "https://www.bundestag.de/resource/blob/945536/6e01d454929a0c31a6b0a22429a1d278/20100.xml"
+    - "https://dserver.bundestag.de/btp/20/20214.xml"
+  # Official MP master data, incl. group memberships in the 21st Bundestag
+  # (PoliCorp's parliamentarians.json stops at the 20th).
+  mdb_stammdaten_url: "https://www.bundestag.de/resource/blob/472878/MdB-Stammdaten.zip"
+
+dwd:
+  # DWD Climate Data Center: area mean ("Gebietsmittel") of monthly mean air temperature.
+  # One file per calendar month (01..12), rows = years, columns = federal states + Deutschland.
+  base_url: "https://opendata.dwd.de/climate_environment/CDC/regional_averages_DE/monthly/air_temperature_mean/"
+  file_pattern: "regional_averages_tm_{month:02d}.txt"
+
+gistemp:
+  # NASA GISTEMP v4, global land-ocean temperature index, anomalies vs 1951-1980.
+  url: "https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv"
+
+temperature:
+  baseline: [1991, 2020]   # WMO climate normal; both series are re-baselined to this
+
+trends:
+  # Google Trends cannot be downloaded reliably by script -> manual CSV export,
+  # see README ("Google Trends export"). Files go into data/raw/trends/.
+  geo: "DE"
+  start: "2004-01-01"

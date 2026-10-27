@@ -1,0 +1,58 @@
+# Manual party assignments for speakers whose party PoliCorp leaves empty or wrong.
+# Used by src/01_speeches.py before all other party rules.
+#   speaker_id     PoliCorp speaker_id
+#   party          one of: CDU/CSU, SPD, GRÜNE, FDP, DIE LINKE, AfD, BSW, fraktionslos, parteilos
+#   until          last day the entry applies (optional)
+#   name_contains  only apply if the speaker name contains this text (optional, for wrong IDs)
+# Checked against the data and, where needed, web sources on 2026-10-27.
+
+overrides:
+  # (Party switchers need no entry: the MP master data has dated group memberships.)
+
+  # --- PDS in the 15th Bundestag: 2 MPs without group status, counted as DIE LINKE (same party).
+  - {speaker_id: 11003584, party: DIE LINKE, until: "2005-10-17"}  # Gesine Lötzsch
+
+  # --- Wrong speaker_id in PoliCorp (ID belongs to another person).
+  - {speaker_id: 11005304, party: SPD, name_contains: "Mende"}     # Dirk-Ulrich Mende (ID of a CDU MP)
+  - {speaker_id: 11002017, party: CDU/CSU}                         # Thomas Schmidt, state minister Saxony (ID of a former DSU MP)
+
+  # --- Federal government members who are not MPs.
+  - {speaker_id: 999990120, party: SPD}      # Klara Geywitz
+  - {speaker_id: 999990122, party: GRÜNE}    # Anne Spiegel
+  - {speaker_id: 999990146, party: SPD}      # Jörg Kukies
+  - {speaker_id: 11003209,  party: CDU/CSU}  # Katherina Reiche (21st; former MP, CDU)
+  - {speaker_id: 999990151, party: SPD}      # Stefanie Hubig (21st)
+  - {speaker_id: 999990152, party: CDU/CSU}  # Karin Prien (21st, CDU)
+  - {speaker_id: 999990153, party: CDU/CSU}  # Karsten Wildberger (21st; non-party when appointed, CDU since May 2025)
+  - {speaker_id: 999990154, party: parteilos}  # Wolfram Weimer (21st, minister of state for culture, never a party member)
+  # Mehmet Daimagüler (999990142, federal commissioner): current party unclear -> left unknown.
+  # Ronald Rauhe (999990161, minister of state for sport since Sep 2026): party not found -> left unknown.
+
+  # --- State politicians (labelled as government in PoliCorp).
+  - {speaker_id: 999990078, party: FDP}        # Joachim Stamp (NRW)
+  - {speaker_id: 999990082, party: SPD}        # Dietmar Woidke (Brandenburg)
+  - {speaker_id: 999990094, party: CDU/CSU}    # Reiner Haseloff (Sachsen-Anhalt, CDU)
+  - {speaker_id: 999990099, party: SPD}        # Manuela Schwesig (Mecklenburg-Vorpommern)
+  - {speaker_id: 999990124, party: SPD}        # Andreas Bovenschulte (Bremen)
+  - {speaker_id: 999990125, party: CDU/CSU}    # Sven Schulze (Sachsen-Anhalt, CDU)
+  - {speaker_id: 999990127, party: CDU/CSU}    # Peter Beuth (Hessen, CDU)
+  - {speaker_id: 999990131, party: SPD}        # Jörg Steinbach (Brandenburg; non-party when appointed 2018, later SPD)
+  - {speaker_id: 999990133, party: SPD}        # Anke Rehlinger (Saarland)
+  - {speaker_id: 999990134, party: DIE LINKE}  # Lena Kreck (Berlin; name garbled in PoliCorp)
+  - {speaker_id: 999990136, party: SPD}        # Daniela Behrens (Niedersachsen)
+  - {speaker_id: 999990137, party: GRÜNE}      # Bettina Jarasch (Berlin)
+  - {speaker_id: 999990138, party: CDU/CSU}    # Roman Poseck (Hessen, CDU)
+  - {speaker_id: 999990140, party: CDU/CSU}    # Kristina Sinemus (Hessen, CDU)
+  - {speaker_id: 999990141, party: CDU/CSU}    # Judith Gerlach (Bayern, CSU)
+  - {speaker_id: 999990143, party: CDU/CSU}    # Marion Gentges (Baden-Württemberg, CDU)
+  - {speaker_id: 999990144, party: CDU/CSU}    # Felor Badenberg (Berlin; non-party 2023, CDU since 2024)
+  - {speaker_id: 999990145, party: SPD}        # Christian Pegel (Mecklenburg-Vorpommern)
+  - {speaker_id: 999990147, party: CDU/CSU}    # Markus Söder (Bayern, CSU)
+  - {speaker_id: 999990148, party: SPD}        # Stephan Weil (Niedersachsen)
+  - {speaker_id: 999990149, party: SPD}        # Alexander Schweitzer (Rheinland-Pfalz)
+  - {speaker_id: 999990150, party: CDU/CSU}    # Boris Rhein (Hessen, CDU)
+  - {speaker_id: 999990155, party: CDU/CSU}    # Nicole Hoffmeister-Kraut (Baden-Württemberg, CDU)
+  - {speaker_id: 11001294,  party: CDU/CSU}    # Karl-Josef Laumann (NRW, CDU; former MP)
+  - {speaker_id: 999990156, party: GRÜNE}      # Katrin Eder (Rheinland-Pfalz)
+  - {speaker_id: 999990157, party: CDU/CSU}    # Christian Heinz (Hessen, CDU)
+  - {speaker_id: 999990158, party: CDU/CSU}    # Regina Kraushaar (Sachsen, CDU since 2008)
