@@ -75,7 +75,8 @@ def main() -> None:
     df["month"] = pd.to_datetime(dict(year=df.year, month=df.month_num, day=1)).dt.strftime("%Y-%m")
 
     start = pd.Timestamp(SETTINGS["start_date"]).to_period("M").strftime("%Y-%m")
-    df = df[df["month"] >= start]
+    end = (SETTINGS["end_date"] or "9999-12")[:7]
+    df = df[df["month"].between(start, end)]
     df = df.dropna(subset=["temp_de", "anomaly_global"], how="all").sort_values("month")
 
     out = df[["month", "temp_de", "anomaly_de", "anomaly_global"]].round(3)

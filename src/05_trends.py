@@ -16,10 +16,12 @@ import re
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw" / "trends"
 OUT = ROOT / "data" / "processed" / "trends_monthly.csv"
+SETTINGS = yaml.safe_load((ROOT / "config" / "settings.yaml").read_text(encoding="utf-8"))
 
 HEADER_RE = re.compile(r'^"?(month|monat|time|zeit|woche|week|tag|day)"?\s*,', re.I)
 
@@ -49,6 +51,8 @@ def main() -> None:
     if not files:
         raise SystemExit("No CSVs in data/raw/trends/ - do the manual export first (README).")
     out = pd.concat([read_export(f) for f in files], ignore_index=True).dropna(subset=["month"])
+    start, end = SETTINGS["start_date"][:7], (SETTINGS["end_date"] or "9999-12")[:7]
+    out = out[out["month"].between(start, end)]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     out.sort_values(["file", "term", "month"]).to_csv(OUT, index=False)
     print(f"wrote {OUT.relative_to(ROOT)}")
