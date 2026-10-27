@@ -1,4 +1,4 @@
-start_date: "2005-10-18"   # constitution of the 16th Bundestag
+start_date: "2004-01-01"   # first month with Google Trends data
 end_date: null             # null = latest available
 time_grain: "M"            # monthly
 unit_of_analysis: "paragraph"
