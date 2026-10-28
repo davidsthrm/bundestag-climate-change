@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.astro/
+# derived data, built by export_data.py
+src/data/viz.json
