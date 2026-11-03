@@ -1,5 +1,10 @@
 start_date: "2004-01-01"   # first month with Google Trends data
 end_date: "2026-09-30"     # last month covered by all sources (temperature, Trends); null = latest available
 time_grain: "M"            # monthly
-unit_of_analysis: "paragraph"
+attention_unit: "sentence"        # relevance / attention, measure (a): share of relevant sentences per month
+stance_unit: "window"             # hit sentence ± stance_context_window, same speech, overlaps merged
+stance_context_window: 2          # sentences before and after a hit
+stance_max_window: 7              # merged windows longer than this are split into windows of at most this length
+main_topic_threshold: 0.2         # share of relevant sentences per speech; provisional, recheck in #5
+main_topic_min_hits: 2            # and at least this many relevant sentences (short speeches)
 speaker_roles: [mp, government, federal_council]   # PoliCorp roles kept (not: presidency, misc, parliamentary_commissioner)

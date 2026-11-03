@@ -91,5 +91,8 @@ See `README.md` for pipeline and data sources, `config/` for settings, keywords 
   labels), then merged. Validate the converter on 20th-Bundestag sessions present in both sources;
   check for overlap/gaps at the boundary.
 - Interjections are excluded from the analysis.
-- Open: unit of analysis. PoliCorp is sentence-level, `settings.yaml` still says "paragraph".
+- Units of analysis (#3): attention = sentence (share of relevant sentences per month); main topic =
+  speech with ≥ 20 % relevant sentences and ≥ 2 hits (provisional, recheck in #5); stance = window
+  (hit sentence ± 2 sentences, same speech, overlaps merged, max 7 sentences), labelled as a whole,
+  speaker's own position decides. Stance windows are also the unit for H1b. See `config/settings.yaml`.
 - Temperature anomalies are relative to 1991–2020, per calendar month (both DE and global).
