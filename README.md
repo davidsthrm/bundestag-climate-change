@@ -4,9 +4,51 @@ Student project for a university NLP module.
 
 ## Research question
 Does the Bundestag's attention to climate change follow the **physical climate
-signal** (temperatures in Germany and globally) or **public attention**
+signal** (global temperature anomaly and global climate-related disasters) or **public attention**
 (Google Trends)? Extension: differences between parties, including the
 **stance** of climate-related speech (pro climate action vs. sceptical/opposing).
+
+## Hypotheses
+Fixed before looking at results (#2).
+
+**H1: Physical signal vs. public attention.** Short-term variation in parliamentary climate attention
+follows public attention (Google Trends) more closely than the physical climate signal. Long-term trend
+and seasonality are removed first.
+- Attention, two measures: (a) share of climate-relevant sentences ("mentions"), (b) share of speeches with
+  climate as main topic.
+- Physical signal: global temperature anomaly (GISTEMP) and global climate-related disasters (EM-DAT:
+  climatological, hydrological, meteorological; no geophysical events, #17). The German anomaly (DWD)
+  goes into the robustness checks.
+- Global, because climate change is a global phenomenon and the debate refers to global benchmarks
+  (IPCC, COPs, 1.5 °C).
+
+**H1b: Tone over time (exploratory).** The share of pro-climate-action stance windows follows public
+attention / the physical signal. Attention alone cannot separate speaking *for* climate action from
+speaking *against* it. Analysed overall and within parties, because party composition changes over time
+(quarterly if party-months are too sparse). Only if the stance criteria below are met.
+
+**H2: Local vs. distant signals.** Attention reacts more strongly to local signals than to global ones:
+German vs. global temperature anomaly, German vs. non-German disasters (same EM-DAT data, no extra source).
+German disasters are rare (most months 0), so this part may stay descriptive. A hand-picked event study
+(~10 events) is optional and descriptive only.
+
+**H3: Stance.** Stance on climate action (pro / neutral / contra) differs between parties and between
+government and opposition. Tested with three methods: lexicon + TF-IDF, embeddings + classifier, LLM.
+
+### Success criteria
+- **Gold set:** Cohen's κ ≥ 0.6 between both annotators. If lower: revise the guideline once,
+  re-annotate, report both values.
+- **Stance:** best method macro-F1 ≥ 0.6 **and** above the lexicon baseline, with bootstrap confidence
+  intervals (small test split). For H1b, pro and contra each need F1 ≥ 0.5.
+- **H1 test:** monthly series detrended and deseasonalized; regression attention ~ Trends + temperature +
+  disasters (with lags, standardized coefficients, Newey-West standard errors). Supported if the Trends
+  coefficient is significant and larger than the physical-signal coefficients, the difference tested with
+  a Wald test. A Granger test checks temporal order (does parliament precede searches?); it shows which
+  comes first in time, not causation, because both can react to the same events.
+- **Months without sittings** (e.g. August recess) have no attention value: they are left out of the
+  regression, not set to 0.
+- **H2:** same model with German vs. global predictors.
+- H1 / H2 count as supported only if the result holds in the robustness checks.
 
 ## Pipeline
 | Step | Script | Output |
