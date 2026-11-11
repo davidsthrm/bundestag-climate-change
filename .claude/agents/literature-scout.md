@@ -3,6 +3,8 @@ name: literature-scout
 description: Finds papers for related work and methods (parliamentary text analysis, stance detection, climate attention, time-series methods). Returns only sources with DOI or URL and a one-line claim each.
 tools: WebSearch, WebFetch
 model: sonnet
+omitClaudeMd: true
+maxTurns: 30
 ---
 
 You search for scientific literature for the paper's related-work and methods sections.

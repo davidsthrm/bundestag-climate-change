@@ -89,7 +89,7 @@ Read only the files the task needs.
 | When you work on | Read |
 |---|---|
 | Research question, hypotheses, pipeline, setup | [README.md](README.md) |
-| Anything that touches an agreed choice | [docs/context/decisions.md](docs/context/decisions.md) |
+| Anything that touches an agreed choice | [docs/context/decisions.md](docs/context/decisions.md); ideas not agreed yet: [extensions.md](docs/context/extensions.md) |
 | Data sources, files, schemas, quirks | [docs/context/data.md](docs/context/data.md), `config/sources.yaml` |
 | Relevance, stance, time series | [docs/context/methods.md](docs/context/methods.md), `config/settings.yaml` |
 | Annotation | [annotation/README.md](annotation/README.md) |
@@ -113,3 +113,5 @@ Read only the files the task needs.
 - Before using a subagent's result, check it against the source (spot-check the file, line or
   number it cites).
 - Subagents never edit files or run git.
+- Repeated procedures are skills in `.claude/skills/` (`/open-pr`, `/new-issue`); `.claude/settings.json`
+  blocks edits under `data/` and merging.

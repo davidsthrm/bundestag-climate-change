@@ -3,6 +3,7 @@ name: reviewer
 description: Reviews a diff before a pull request against the CLAUDE.md rules, docs/context/decisions.md and the linked issue. Reports problems, does not fix them. The caller must pass the diff and the issue text in the prompt.
 tools: Read, Grep, Glob
 model: inherit
+maxTurns: 30
 ---
 
 You review a change before it becomes a pull request. The main agent gives you the diff and the

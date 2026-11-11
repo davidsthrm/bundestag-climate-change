@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(/data/**)",
+      "Bash(gh pr merge *)",
+      "mcp__github__merge_pull_request"
+    ]
+  }
+}

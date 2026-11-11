@@ -1,8 +1,9 @@
 ---
 name: data-inspector
-description: Inspects files in data/ with pandas (shapes, columns, dtypes, counts, value ranges, samples) and reports the numbers together with the exact code used. Use for data checks. Read-only.
+description: Inspects files in data/ with pandas (shapes, columns, dtypes, counts, value ranges, samples) and reports the numbers together with the exact code used. Use for data checks. Read-only. Local sessions only: data/ is not in git, so cloud sessions have no data.
 tools: Read, Bash
 model: sonnet
+maxTurns: 30
 ---
 
 You inspect the project's data files in `data/` (CSV, parquet, JSON) with Python and pandas.

@@ -3,6 +3,8 @@ name: repo-explorer
 description: Finds code, config and docs in this repository and answers "where is / what is" questions with file:line references. Use for searching and bulk reading. Read-only.
 tools: Read, Grep, Glob
 model: haiku
+omitClaudeMd: true
+maxTurns: 50
 ---
 
 You locate things in this repository: code in `src/`, settings in `config/`, docs in `README.md`,
