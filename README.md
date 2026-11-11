@@ -56,8 +56,8 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | 0 | `src/00_download.py`    | raw data into `data/raw/` (+ MANIFEST.csv) |
 | 1a | `src/01a_wp21_to_policorp.py` | 21st Bundestag XML in PoliCorp format (`data/interim/wp21_policorp.json`) |
 | 1 | `src/01_speeches.py`    | all speeches 2004–today, one row per sentence, with party and government/opposition (`config/governments.yaml`) (`data/interim/sentences.parquet`) |
-| 2 | `src/02_relevance.py`   | climate-relevant paragraphs (keyword dictionary) |
-| 3 | `src/03_stance.py`      | stance label per relevant paragraph |
+| 2 | `src/02_relevance.py`   | climate-relevant sentences (keyword dictionary) + main-topic speeches |
+| 3 | `src/03_stance.py`      | stance label per window (relevant sentence ± 2 sentences) |
 | 4 | `src/04_temperature.py` | monthly temperature anomalies DE + global |
 | 5 | `src/05_trends.py`      | monthly Google Trends index (DE) |
 | 6 | `src/06_merge.py`       | one monthly panel in `data/processed/` |
@@ -101,6 +101,16 @@ Download via the ↓ icon of "Interesse im zeitlichen Verlauf".
 Note the export date in `data/raw/MANIFEST.csv`. Google samples the data, so a re-export on another
 day can differ slightly; for robustness export A a second time on a different day
 (`A_term_klimawandel_2.csv`) and check the correlation.
+
+### Units of analysis
+| Measure | Unit | Setting |
+|---|---|---|
+| Attention (a): mentions | sentence; share of climate-relevant sentences among all sentences per month | `attention_unit` |
+| Attention (b): main topic | speech with ≥ 20 % relevant sentences and ≥ 2 relevant sentences (provisional) | `main_topic_threshold`, `main_topic_min_hits` |
+| Stance | window: relevant sentence ± 2 sentences of the same speech, overlapping windows merged, split above 7 sentences into chunks of (nearly) equal length, larger first (9 → 5 + 4) | `stance_unit`, `stance_context_window`, `stance_max_window` |
+
+Single sentences are too short for stance (many need the previous sentence to be labelled);
+± 1 sentence was too little context. Interjections are not part of any unit.
 
 ### Known caveats
 - PoliCorp transcripts are split into **sentences**, not paragraphs (`text_raw` = list of sentences
