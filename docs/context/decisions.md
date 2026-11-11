@@ -58,7 +58,7 @@ Full text: [README.md, "Success criteria"](../../README.md#success-criteria).
 - EM-DAT disasters: subgroups climatological, hydrological, meteorological; no geophysical
   events (#2, #17).
 - The lecturer confirmed that additional structured sources are welcome (e.g. Trends,
-  temperature, social-media or news statistics) (recorded in the PR that added this file).
+  temperature, social-media or news statistics) (PR #20).
 
 ## Units of analysis
 Table: [README.md, "Units of analysis"](../../README.md#units-of-analysis). Values in
