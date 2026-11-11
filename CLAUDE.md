@@ -84,6 +84,9 @@ See `README.md` for pipeline and data sources, `config/` for settings, keywords 
 - Every download is logged in `data/raw/MANIFEST.csv` (URL, access time, SHA-256).
 
 ## Key decisions
+- Hypotheses H1, H1b, H2, H3 and success criteria are fixed in `README.md` (#2), before looking at
+  results. Physical signal = global temperature anomaly + global EM-DAT climate disasters; German
+  anomaly only in H2 and robustness checks. H1b (tone over time) is exploratory.
 - Speeches: PoliCorp-GermaParl2-PLUS (15th–20th Bundestag, ends 18 Mar 2025) is the main corpus,
   incl. its party mapping.
 - Speeches of the 21st Bundestag come from the official Bundestag Open Data XML and are converted
