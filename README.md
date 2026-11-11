@@ -3,9 +3,8 @@
 Student project for a university NLP module.
 
 ## Research question
-Does the Bundestag's attention to climate change follow the **physical climate
-signal** (global temperature anomaly and global climate-related disasters) or **public attention**
-(Google Trends)? Extension: differences between parties, including the
+Does the Bundestag's attention to climate change follow the **physical climate signal** or
+**public attention**? Extension: differences between parties, including the
 **stance** of climate-related speech (pro climate action vs. sceptical/opposing).
 
 ## Hypotheses
@@ -46,7 +45,8 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
   a Wald test. A Granger test checks temporal order (does parliament precede searches?); it shows which
   comes first in time, not causation, because both can react to the same events.
 - **Months without sittings** (e.g. August recess) have no attention value: they are left out of the
-  regression, not set to 0.
+  regression, not set to 0. For the Granger test, lagged attention is also missing in the first month
+  after each recess, so those rows are dropped too.
 - **H2:** same model with German vs. global predictors.
 - H1 / H2 count as supported only if the result holds in the robustness checks.
 
