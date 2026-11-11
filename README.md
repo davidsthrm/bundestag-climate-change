@@ -65,7 +65,7 @@ day can differ slightly; for robustness export A a second time on a different da
 |---|---|---|
 | Attention (a): mentions | sentence; share of climate-relevant sentences among all sentences per month | `attention_unit` |
 | Attention (b): main topic | speech with ≥ 20 % relevant sentences and ≥ 2 relevant sentences (provisional) | `main_topic_threshold`, `main_topic_min_hits` |
-| Stance | window: relevant sentence ± 2 sentences of the same speech, overlapping windows merged, split above 7 sentences | `stance_unit`, `stance_context_window`, `stance_max_window` |
+| Stance | window: relevant sentence ± 2 sentences of the same speech, overlapping windows merged, split above 7 sentences into chunks of (nearly) equal length, larger first (9 → 5 + 4) | `stance_unit`, `stance_context_window`, `stance_max_window` |
 
 Single sentences are too short for stance (many need the previous sentence to be labelled);
 ± 1 sentence was too little context. Interjections are not part of any unit.
