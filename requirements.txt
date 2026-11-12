@@ -1,6 +1,7 @@
 pandas>=2.2
 numpy
 pyarrow
+openpyxl          # reads the EM-DAT .xlsx export (step 4b)
 pyyaml
 requests
 matplotlib

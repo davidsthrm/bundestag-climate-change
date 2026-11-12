@@ -111,12 +111,14 @@ classification **Natural**, all countries, years **2000 – current year**, down
 `data/raw/disasters/` (exactly one file there). Log it in the manifest right away:
 
 ```bash
-python -c "import importlib, pathlib, sys; sys.path.insert(0, 'src'); d = importlib.import_module('00_download'); [d.log_manifest(p.resolve(), 'https://public.emdat.be') for p in pathlib.Path('data/raw/disasters').glob('*.xlsx')]"
+python -c "import importlib, pathlib, sys; sys.path.insert(0, 'src'); d = importlib.import_module('00_download'); [d.log_manifest(p.resolve(), d.SOURCES['emdat']['portal_url']) for p in pathlib.Path('data/raw/disasters').glob('*.xlsx')]"
 ```
 
 `04b_disasters.py` keeps the subgroups climatological, hydrological, meteorological (`config/sources.yaml`),
 counts each event once per region (ID without the country code), puts deaths and affected into the
-start month and fills months without events with 0. The licence forbids redistribution: never commit
+start month and fills months without events with 0. Regions: Germany (`de`), rest of world (`row`) and
+all countries (`global`); an event that hits Germany and other countries counts in `de` and `row`, so
+global events are not `events_de + events_row`. The licence forbids redistribution: never commit
 the export or share it outside the team.
 
 ### Units of analysis
@@ -150,8 +152,9 @@ Single sentences are too short for stance (many need the previous sentence to be
   check results with and without these months.
 - `B_topic_hitzewelle` is dominated by summer 2026 (= 100); values before 2018 are mostly 0–3.
 - Google changed its data collection on 1 Jan 2011, 2016, 2017 and 2022 (marked "Hinweis" in Trends).
-- EM-DAT heatwave deaths: excess-mortality estimates only from 2022 (Germany 2,000–8,000 per heatwave,
-  earlier heatwaves almost none), so deaths have a recording break; event counts look stable since 2004.
+- EM-DAT heatwave deaths: excess-mortality estimates only from 2022 (Germany about 2,400–8,200 per
+  heatwave, earlier heatwaves almost none), so deaths have a recording break. Event counts rise only
+  mildly (about +8 % from 2004–2014 to 2015–2025).
 - EM-DAT adds events late: the last months of the export (2026) are incomplete.
 
 ## Setup

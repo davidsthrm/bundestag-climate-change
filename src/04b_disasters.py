@@ -2,15 +2,16 @@
 
 Input : data/raw/disasters/*.xlsx  (one manual EM-DAT export, see README "EM-DAT export (manual)")
 Output: data/processed/disasters_monthly.csv
-        columns: month (YYYY-MM), events_de, deaths_de, affected_de, events_row, deaths_row, affected_row
-        (de = Germany, row = rest of world)
+        columns: month (YYYY-MM), events_/deaths_/affected_ x de, row, global
+        (de = Germany, row = rest of world, global = all countries)
         results/3_data_preparation/tables/04b_disasters_per_year.csv (data check: reporting bias)
 
 Rules (#17)
 - Only the subgroups in config/sources.yaml (climatological, hydrological, meteorological).
 - EM-DAT has one row per event and country (DisNo. "2021-0359-DEU"). Events are counted once per
   region by the ID without the country code; deaths and affected are summed over the rows.
-  An event that hits Germany and other countries counts in both regions.
+  An event that hits Germany and other countries counts in de and in row, but once in global,
+  so global events != events_de + events_row (deaths and affected do add up).
 - Everything goes to the start month. Events without a start month are dropped (and reported).
 - Blank deaths / affected = not reported, counted as 0.
 - Every month from start_date to end_date is present; months without events are 0.
@@ -33,7 +34,7 @@ SETTINGS = yaml.safe_load((ROOT / "config" / "settings.yaml").read_text(encoding
 
 COLS = ["DisNo.", "Disaster Subgroup", "ISO", "Start Year", "Start Month", "Total Deaths", "Total Affected"]
 MEASURES = ["events", "deaths", "affected"]
-REGIONS = ["de", "row"]
+REGIONS = ["de", "row", "global"]
 
 
 def read_export() -> pd.DataFrame:
@@ -52,7 +53,10 @@ def read_export() -> pd.DataFrame:
 def checks(df: pd.DataFrame, out: pd.DataFrame) -> None:
     """Print the data checks from #17: reporting bias, heavy tails, zero months, late reporting."""
     print("\nevents per year (reporting bias: more events recorded in later years?)")
-    by_year = out.groupby(out.index.str[:4].rename("year"))[[f"{m}_{r}" for r in REGIONS for m in ("events", "deaths")]].sum()
+    by_year = (df.assign(year=df["month"].str[:4]).groupby(["year", "region"])
+               .agg(events=("event_id", "nunique"), deaths=("Total Deaths", "sum")).unstack("region"))
+    by_year.columns = [f"{m}_{r}" for m, r in by_year.columns]
+    by_year = by_year.reindex(columns=[f"{m}_{r}" for r in REGIONS for m in ("events", "deaths")]).fillna(0).astype("int64")
     print(by_year.to_string())
     TABLES.mkdir(parents=True, exist_ok=True)
     by_year.to_csv(TABLES / "04b_disasters_per_year.csv")
@@ -66,8 +70,9 @@ def checks(df: pd.DataFrame, out: pd.DataFrame) -> None:
 
     zero_de = (out["events_de"] == 0).sum()
     print(f"\nmonths without a German event: {zero_de} of {len(out)}")
-    both = df.groupby("event_id")["region"].nunique().gt(1).sum()
-    split = df.groupby(["event_id", "region"])["month"].nunique().gt(1).sum()
+    local = df[df["region"] != "global"]
+    both = local.groupby("event_id")["region"].nunique().gt(1).sum()
+    split = local.groupby(["event_id", "region"])["month"].nunique().gt(1).sum()
     print(f"events in Germany and elsewhere (counted in both): {both}")
     print(f"events with different start months per country (counted in each month): {split}")
     print("\nlast 6 months (EM-DAT adds events late: low values may be incomplete)")
@@ -88,20 +93,21 @@ def main() -> None:
     print(df["Disaster Subgroup"].value_counts().to_string())
     df = df[df["Disaster Subgroup"].isin(CFG["subgroups"])]
 
-    in_window = df["Start Year"] >= int(start[:4])
+    end = (SETTINGS["end_date"] or f"{df['Start Year'].max()}-12")[:7]
+    in_window = df["Start Year"].between(int(start[:4]), int(end[:4]))
     no_month = df["Start Month"].isna() & in_window
-    print(f"\ndropped (no start month, from {start[:4]}): {no_month.sum()} rows, "
+    print(f"\ndropped (no start month, {start[:4]}-{end[:4]}): {no_month.sum()} rows, "
           f"{df.loc[no_month, 'Total Deaths'].sum():.0f} of {df.loc[in_window, 'Total Deaths'].sum():.0f} deaths")
     df = df[df["Start Month"].notna()].copy()
 
     df["month"] = (df["Start Year"].astype(int).astype(str) + "-"
                    + df["Start Month"].astype(int).astype(str).str.zfill(2))
-    end = (SETTINGS["end_date"] or df["month"].max())[:7]
     if df["month"].max() < end:
         raise SystemExit(f"Export ends {df['month'].max()}, end_date is {end}: export again.")
-    df = df[df["month"].between(start, end)]
+    df = df[df["month"].between(start, end)].copy()
     df["region"] = np.where(df["ISO"] == CFG["country_iso"], "de", "row")
     df["event_id"] = df["DisNo."].str.rsplit("-", n=1).str[0]
+    df = pd.concat([df, df.assign(region="global")], ignore_index=True)
 
     agg = df.groupby(["month", "region"]).agg(events=("event_id", "nunique"),
                                              deaths=("Total Deaths", "sum"),

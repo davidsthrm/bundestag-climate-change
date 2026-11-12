@@ -8,8 +8,9 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
 
 ## General
 - Period: 2004-01 to 2026-09, monthly, 273 months (`start_date`, `end_date` in `config/settings.yaml`).
-- `data/raw/MANIFEST.csv`: one row per downloaded file, 126 rows; columns `file`, `url`,
-  `accessed_utc`, `bytes`, `sha256`. Written by `src/00_download.py`.
+- `data/raw/MANIFEST.csv`: one row per downloaded file, 127 rows (incl. the EM-DAT export);
+  columns `file`, `url`, `accessed_utc`, `bytes`, `sha256`. Written by `src/00_download.py`
+  (manual exports: command in the README).
 - Month key in all processed files: `month` as `YYYY-MM`.
 
 ## Speeches, 15th–20th Bundestag (PoliCorp-GermaParl2-PLUS)
@@ -93,23 +94,26 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   Columns used: `DisNo.`, `Disaster Subgroup`, `ISO`, `Start Year`, `Start Month`, `Total Deaths`,
   `Total Affected`.
 - Processed: `data/processed/disasters_monthly.csv`, written by `src/04b_disasters.py`: 273 rows,
-  2004-01..2026-09; columns `month`, `events_de`, `deaths_de`, `affected_de`, `events_row`,
-  `deaths_row`, `affected_row` (de = Germany, ISO DEU; row = rest of world); months without events = 0.
+  2004-01..2026-09; columns `month` and `events_*`, `deaths_*`, `affected_*` for `de` (Germany,
+  ISO DEU), `row` (rest of world) and `global` (all countries); months without events = 0.
 - Rules (#17): subgroups climatological, hydrological, meteorological (`config/sources.yaml`);
   events counted once per region by `DisNo.` without the country code; deaths and affected summed
   over rows; everything in the start month; blank deaths / affected = 0; events without start month
-  dropped (45 rows since 2004, 10 deaths).
+  dropped (45 rows with start year 2004–2026, 10 deaths).
 - Caveats:
-  - Germany: events in 50 of 273 months; 47 events hit Germany and other countries and count in both.
+  - Germany: 55 events in 50 of 273 months; 47 of them also hit other countries (mostly European storms
+    and floods) and count in `de` and `row`, but once in `global`. So `events_global` is not
+    `events_de + events_row`; deaths and affected do add up.
   - 107 events start in different months in different countries and count in each of those months.
   - Heatwave deaths: from 2022, extreme-temperature events carry excess-mortality estimates
     (DE: 8,173 in 2022-05, 6,376 in 2023-07, 6,282 in 2024-06, 2,445 in 2025-07), earlier heatwaves
-    almost none (2018, 2019: blank or < 10). Deaths have a recording break; event counts are stable
-    (~230–335 events per year outside Germany, 2004–2025, no upward trend).
+    almost none (2018, 2019: blank or < 10). Deaths have a recording break.
+  - Event counts: 227–334 events per year worldwide (2004–2025), about +8 % from 2004–2014
+    (mean 260.5) to 2015–2025 (mean 281.6): a mild rise, no strong reporting trend.
   - Late reporting: 2026 has ~15 events per month outside Germany vs. ~24–25 in 2023–2025, so the
     last months are incomplete.
   - Some events have a start month after the export date (2026-11, 2026-12); outside the window.
-  - Per-year counts: `results/3_data_preparation/tables/04b_disasters_per_year.csv`.
+  - Per-year counts (unique events per year): `results/3_data_preparation/tables/04b_disasters_per_year.csv`.
 
 ## Planned outputs (scripts are stubs)
 - `data/interim/sentences_relevant.parquet` (`src/02_relevance.py`, #5).
