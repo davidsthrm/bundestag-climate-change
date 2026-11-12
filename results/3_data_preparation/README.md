@@ -9,3 +9,7 @@ script prefix (e.g. `02_precision_by_period.csv`).
 ## Key numbers for the paper
 | Value | Meaning | Produced by script | Commit |
 |---|---|---|---|
+| 273 | months in `disasters_monthly.csv` (2004-01..2026-09), no gaps | `src/04b_disasters.py` | bf3dcbf |
+| 230–335 | climate-related events per year outside Germany, 2004–2025 (no upward reporting trend) | `src/04b_disasters.py` (`04b_disasters_per_year.csv`) | bf3dcbf |
+| 50 of 273 | months with at least one German climate-related event | `src/04b_disasters.py` | bf3dcbf |
+| 45 rows / 10 deaths | events since 2004 dropped for missing start month | `src/04b_disasters.py` | bf3dcbf |
