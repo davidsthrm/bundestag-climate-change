@@ -9,3 +9,4 @@ script prefix (e.g. `02_precision_by_period.csv`).
 ## Key numbers for the paper
 | Value | Meaning | Produced by script | Commit |
 |---|---|---|---|
+| 0.998 / 0.997 | correlation of two Klimawandel Trends exports on different days, levels / month-to-month changes (273 months; max. difference 2 index points) | `src/05_trends.py` (`05_trends_reexport.csv`) | 3a38e4f |

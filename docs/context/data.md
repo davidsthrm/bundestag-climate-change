@@ -84,8 +84,8 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
     data, check results with and without these months.
   - Hitzewelle is dominated by summer 2026; values before 2018 are mostly 0–3.
   - Google samples the data and changed its collection on 1 Jan 2011, 2016, 2017 and 2022.
-    Second export of the main series vs. the first: r = TODO (levels), r = TODO (month-to-month
-    changes), max. difference TODO index points (`results/2_data_understanding/tables/05_trends_reexport.csv`, #4).
+    Second export of the main series vs. the first: r = 0.998 (levels), r = 0.997 (month-to-month
+    changes), max. difference 2 index points, 273 months (`results/2_data_understanding/tables/05_trends_reexport.csv`, #4).
 
 ## Disasters (EM-DAT), planned
 - Not in the repo yet: #17 (`src/04b_disasters.py`).

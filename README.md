@@ -145,7 +145,8 @@ Single sentences are too short for stance (many need the previous sentence to be
   check results with and without these months.
 - `B_topic_hitzewelle` is dominated by summer 2026 (= 100); values before 2018 are mostly 0–3.
 - Google samples the data: a second export of Klimawandel on another day correlates with the first at
-  r = TODO (levels) and r = TODO (month-to-month changes), `results/2_data_understanding/tables/05_trends_reexport.csv`.
+  r = 0.998 (levels) and r = 0.997 (month-to-month changes), at most 2 index points apart
+  (273 months, `results/2_data_understanding/tables/05_trends_reexport.csv`). Sampling noise is negligible.
 - Google changed its data collection on 1 Jan 2011, 2016, 2017 and 2022 (marked "Hinweis" in Trends).
 
 ## Setup
