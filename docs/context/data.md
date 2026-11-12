@@ -110,9 +110,12 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   - Because the large European heatwaves 2022–2024 also hit Germany, `deaths_row` 2022–2024 is
     13–25 k per year, while `deaths_global` is 72–79 k.
   - 107 events start in different months in different countries and count in each of those months.
-  - Heatwave deaths: from 2022, extreme-temperature events carry excess-mortality estimates
-    (DE: 8,173 in 2022-05, 6,376 in 2023-07, 6,282 in 2024-06, 2,445 in 2025-07), earlier heatwaves
-    almost none (2018, 2019: blank or < 10). Deaths have a recording break.
+  - Heatwave deaths are not a usable German heat signal. EM-DAT enters European heatwaves a median
+    of 13–16 months after they start (2022–2025), with deaths from later excess-mortality studies.
+    The 2026 heatwave is not in the export (12 Nov 2026). Before 2022, German heatwave deaths are
+    almost missing (2018: none, 2019: 4; RKI estimates 9,000 and 7,400), and from 2022 they are
+    2–3 times the RKI estimates (DE: 8,173 in 2022-05, 6,376 in 2023-07, 6,282 in 2024-06, 2,445 in
+    2025-07). German heat deaths come from the RKI instead (#26).
   - Event counts: 227–334 events per year worldwide (2004–2025), about +8 % from 2004–2014
     (mean 260.5) to 2015–2025 (mean 281.6): a mild rise, no strong reporting trend.
   - Late reporting: 2026 has ~15 events per month worldwide vs. ~24–25 in 2023–2025, so the

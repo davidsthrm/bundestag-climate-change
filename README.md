@@ -152,9 +152,9 @@ Single sentences are too short for stance (many need the previous sentence to be
   check results with and without these months.
 - `B_topic_hitzewelle` is dominated by summer 2026 (= 100); values before 2018 are mostly 0–3.
 - Google changed its data collection on 1 Jan 2011, 2016, 2017 and 2022 (marked "Hinweis" in Trends).
-- EM-DAT heatwave deaths: excess-mortality estimates only from 2022 (Germany about 2,400–8,200 per
-  heatwave, earlier heatwaves almost none), so deaths have a recording break. Event counts rise only
-  mildly (about +8 % from 2004–2014 to 2015–2025).
+- EM-DAT heatwave deaths: missing for Germany before 2022, then 2–3 times the RKI estimates, and entered
+  13–16 months late (the 2026 heatwave is missing). Use the RKI series for German heat deaths (#26);
+  event counts rise only mildly (about +8 % from 2004–2014 to 2015–2025).
 - EM-DAT adds events late: the last months of the export (2026) are incomplete.
 
 ## Setup
