@@ -41,3 +41,11 @@ trends:
   # see README ("Google Trends export"). Files go into data/raw/trends/.
   geo: "DE"
   start: "2004-01-01"
+
+emdat:
+  # EM-DAT (CRED, UCLouvain), free for academic use after registration; licence forbids
+  # redistribution. Login needed -> manual export, see README ("EM-DAT export (manual)").
+  # File goes into data/raw/disasters/.
+  portal_url: "https://public.emdat.be"
+  subgroups: [Climatological, Hydrological, Meteorological]   # climate-related; no geophysical (#2, #17)
+  country_iso: "DEU"                                          # Germany; everything else = rest of world
