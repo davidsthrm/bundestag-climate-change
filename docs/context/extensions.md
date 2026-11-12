@@ -16,6 +16,10 @@ Do not implement anything from this file without such an agreement.
 ## Product (possible private extension after the course)
 - Presentable, usable interface on top of the `viz/` app: clicking a month or party shows the
   speech windows behind the number, with a link to the protocol.
+- Protocol analyser: drop in one plenary protocol (XML or session number); the pipeline (convert,
+  relevance, stance) runs on it and a page shows whether climate was a topic, how much, which
+  speakers and parties, and the stance per window with its text. Needs the relevance filter (#5)
+  and the best stance method (#9–#13) first.
 - Live monitor: scheduled update from Bundestag Open Data after each sitting week.
 - Release of the gold set, the labelled windows and the best model; short workshop paper.
 - Constraints for anything public: EM-DAT does not allow redistribution; stance labels per MP are
