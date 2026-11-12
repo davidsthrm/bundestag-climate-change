@@ -30,7 +30,8 @@ Work items: #15 (paper), #16 (slides). `#N` = issue N of this repository.
 | Deployment | 0.5 |
 | Conclusion | 0.5 |
 
-- The Astro app in `viz/` is the deployment chapter.
+- The protocol analyser is the deployment chapter, if we keep it (see [decisions.md](decisions.md)).
+- The Astro app in `viz/` is only a helper for understanding the data, not the deployment.
 - Key numbers per chapter: README of the matching `results/` phase.
 
 ## Dates (2026)

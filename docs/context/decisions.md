@@ -25,6 +25,17 @@ The README is the single source; the bullets below are a short form.
 - H3: stance differs between parties and between government and opposition; tested with three
   methods (#2).
 
+## Second goal: protocol analyser
+- Next to answering the research question, we build a protocol analyser: input one plenary
+  protocol (XML or session number); the pipeline runs on it (convert, relevance filter, stance);
+  the output shows whether climate was a topic and how much, which speakers and parties, and
+  the stance per window with its text (PR #20).
+- Condition: it comes last and never delays the paper; it is dropped first if time gets tight
+  (PR #20).
+- It is the deployment chapter, if we keep it; the `viz/` app is only a helper for understanding
+  the data (PR #20).
+- Needs the relevance filter (#5) and the best stance method (#9–#13) first.
+
 ## Success criteria
 Full text: [README.md, "Success criteria"](../../README.md#success-criteria).
 
