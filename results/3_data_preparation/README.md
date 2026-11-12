@@ -16,3 +16,6 @@ script prefix (e.g. `02_precision_by_period.csv`).
 | 182,105 | deaths in other countries from German events: only in `deaths_global`, not in `deaths_row` | `src/04b_disasters.py` | 0dde8fd |
 | 50 of 273 | months with at least one German climate-related event | `src/04b_disasters.py` | 0dde8fd |
 | 45 rows / 10 deaths | events with start year 2004–2026 dropped for missing start month | `src/04b_disasters.py` | 0dde8fd |
+| 16,000 [14,400; 17,600] | RKI heat-related deaths in Germany 2026 (weeks 15–37, report of 24.09.2026); highest since 1992 | `src/04c_heat_mortality.py` (`heat_mortality_yearly.csv`) | 89c510a |
+| 5,716 + 3,908 | heat deaths in week 26 (heat week, end of June 2026) and the following week 27 | `src/04c_heat_mortality.py` | 89c510a |
+| 127 | max. deaths between the summed weekly RKI estimates and the RKI yearly value (2016–2026) | `src/04c_heat_mortality.py` (`04c_heat_yearly_check.csv`) | 89c510a |
