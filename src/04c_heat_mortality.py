@@ -12,9 +12,10 @@ Output:
 
 Rules
 - Weekly heat deaths = "Modell mit Hitze" - "Modell ohne Hitze" (point estimates). All modelled weeks
-  count, also the few slightly negative ones: the RKI yearly values are these sums (rounded).
+  count, also the few slightly negative ones. The RKI yearly values are close to these sums but not
+  identical (2016-2026: up to 127 deaths / 6 % apart); they are probably aggregated separately.
 - A week goes to the month of its Thursday (ISO week).
-- Months without a modelled week (winter half-year) are 0: the model has no heat effect there.
+- Months without a modelled week (winter half-year) are 0 (proposal, open in #26: 0 or missing).
   weeks_modelled shows how many weeks a month has; it is lower where the report stopped (2026: week 37).
 - Yearly: RKI report for 2016 onwards; the paper's eTable (earlier model version) before 2016.
 """
@@ -32,6 +33,7 @@ OUT_M = ROOT / "data" / "processed" / "heat_mortality_monthly.csv"
 OUT_Y = ROOT / "data" / "processed" / "heat_mortality_yearly.csv"
 TABLES = ROOT / "results" / "3_data_preparation" / "tables"
 SETTINGS = yaml.safe_load((ROOT / "config" / "settings.yaml").read_text(encoding="utf-8"))
+
 
 def need(path: Path) -> Path:
     if not path.exists():
@@ -82,7 +84,7 @@ def main() -> None:
 
     check = (weeks.groupby("Jahr")["heat_deaths"].sum().round().astype("int64").rename("weekly_sum").to_frame()
              .join(report.set_index("year")["heat_deaths_de"].rename("rki_report"))
-             .join(paper.set_index("year")["heat_deaths_de"].rename("winklmayr2022")))
+             .join(paper.set_index("year")["heat_deaths_de"].rename("winklmayr2022").astype("Int64")))
     check.index.name = "year"
 
     for path, df in ((OUT_M, monthly), (OUT_Y, yearly.set_index("year"))):
@@ -92,10 +94,14 @@ def main() -> None:
     TABLES.mkdir(parents=True, exist_ok=True)
     check.to_csv(TABLES / "04c_heat_yearly_check.csv")
 
-    print("\nyearly check: weekly sums vs. RKI yearly (should match up to rounding) vs. paper (older model)")
+    print("\nyearly check: weekly sums vs. RKI yearly (close, not identical) vs. paper (older model)")
     print(check.to_string())
     dev = (check["weekly_sum"] - check["rki_report"]).abs()
-    print(f"max |weekly sum - RKI yearly|: {dev.max()} ({dev.idxmax()})")
+    rel = dev / check["rki_report"]
+    print(f"max |weekly sum - RKI yearly|: {dev.max()} ({dev.idxmax()}), max relative {rel.max():.1%} ({rel.idxmax()})")
+    print("\nweeks with most heat deaths (heat kills with a delay: the week after a heat week counts too)")
+    top = weeks.sort_values("heat_deaths", ascending=False).head(6)
+    print(top[["Jahr", "Woche", "month", "heat_deaths"]].round().astype({"heat_deaths": "int64"}).to_string(index=False))
     print("\nmonths with most heat deaths")
     print(monthly.sort_values("heat_deaths_de", ascending=False).head(6).to_string())
     print("\nlast 6 months (weeks_modelled < usual = report stopped)")

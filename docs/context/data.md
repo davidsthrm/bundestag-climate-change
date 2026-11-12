@@ -134,21 +134,25 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   `data/raw/heat/rki_hitzemortalitaet_yearly.csv` (`Berichtsdatum`, `Jahr`, `Modell_Punktschätzer`,
   `Modell_untere_PG`, `Modell_obere_PG`, `Bevölkerung`; thousands with `.`), 2016–2026.
 - Before 2016: `config/heat_deaths_paper.yaml`, eTable of Winklmayr et al. 2022 (2004–2021, estimate
-  and 95 % CI), copied by hand because the PMC page blocks scripted downloads.
+  and 95 % CI), copied by hand because the PMC page blocks scripted downloads. The article is
+  "all rights reserved"; we quote 18 numbers with citation. The UBA indicator GE-I-2 shows the same
+  RKI series 1992–2021 only as a chart and PDF factsheet, no data file, so it is not used.
 - Processed (`src/04c_heat_mortality.py`):
   - `data/processed/heat_mortality_monthly.csv`: 129 rows, 2016-01..2026-09; `month`,
     `heat_deaths_de` (sum of weekly "mit" − "ohne Hitze"; week → month of its Thursday),
-    `weeks_modelled` (0 in winter, where `heat_deaths_de` = 0).
+    `weeks_modelled` (0 in winter, where `heat_deaths_de` = 0; 0 vs. missing is open in #26).
   - `data/processed/heat_mortality_yearly.csv`: 23 rows, 2004–2026; `year`, `heat_deaths_de`, `lower`,
     `upper`, `source` (paper before 2016, RKI report from 2016).
 - Caveats:
   - Model estimates, revised during the summer; the report date is in `source`.
-  - Weekly sums match the RKI yearly values up to rounding (max. 127 deaths apart, 2018);
+  - Weekly sums are close to the RKI yearly values but not identical (max. 127 deaths apart in 2018,
+    max. 6.1 % in 2016), so the RKI probably aggregates the year separately;
     `results/3_data_preparation/tables/04c_heat_yearly_check.csv`.
   - Paper (older model) vs. report, 2016–2021: 1,800 / 1,400, 1,400 / 1,280, 8,700 / 9,000,
     6,900 / 7,400, 3,700 / 3,500, 1,700 / 1,640.
-  - Heat kills with a delay: June 2026 heat week 26 = 5,716, week 27 = 3,908 (together the ~9,600
-    reported). Week 27 counts in July, so monthly values split heatwaves at month ends.
+  - Heat kills with a delay: June 2026 heat week 26 = 5,716, week 27 = 3,908; together the ~9,600 the
+    RKI report attributes to the heat week 26. Week 27 counts in July, so monthly values split
+    heatwaves at month ends.
   - Small negative values in cool weeks (min. −43 per week), e.g. 2026-04 = −21; kept, as in the
     RKI yearly sums.
   - 2026-09 has only 2 modelled weeks (report ended with week 37).

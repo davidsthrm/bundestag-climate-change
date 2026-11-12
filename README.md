@@ -74,7 +74,7 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | Temperature global | NASA GISTEMP v4, global land-ocean index | 1880 – last month | `src/00_download.py temperature` |
 | Public attention | Google Trends, region DE | 2004 – today, monthly | manual CSV export (below) |
 | Climate disasters | EM-DAT (CRED, UCLouvain), free for academic use after registration, no redistribution | 2000 – today (our export), one row per event and country | manual export (below) |
-| Heat-related deaths Germany | RKI weekly report on heat-related mortality (model estimate); before 2016 Winklmayr et al. 2022 ([10.3238/arztebl.m2022.0202](https://doi.org/10.3238/arztebl.m2022.0202)), eTable in `config/heat_deaths_paper.yaml` | weekly 2016 – today (summer weeks 15–40), yearly 1992–2021 | `src/00_download.py rki` |
+| Heat-related deaths Germany | RKI weekly report on heat-related mortality (model estimate); before 2016 Winklmayr et al. 2022 ([10.3238/arztebl.m2022.0202](https://doi.org/10.3238/arztebl.m2022.0202)), eTable in `config/heat_deaths_paper.yaml` | weekly 2016 – today (summer weeks 15–40); yearly 2004–2021 from the paper (which covers 1992–2021) | `src/00_download.py rki` |
 
 All URLs are in `config/sources.yaml`. Raw data is **not** in git: each person runs the
 download script locally. Every download is logged with URL, access time and SHA-256 in
