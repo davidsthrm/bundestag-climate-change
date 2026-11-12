@@ -40,6 +40,8 @@ Agreed thresholds and criteria: [decisions.md](decisions.md). Values: `config/se
 - Months without sittings are missing, not 0; for Granger the first month after each recess is
   dropped too.
 - H2: same model with German vs. global predictors.
+- H2, heat deaths (proposed in PR #27): RKI heat-related deaths 2016–2026, descriptive weekly event study
+  (heat weeks vs. attention), not a predictor; winter weeks = 0 (#26).
 - Open: which disaster measure enters the main model (count, deaths or affected) (#17, #12).
 - Robustness (#14): German anomaly instead of the global one; with and without the Trends spike
   months (Apr 2022, Apr 2023); break marker for the Klima topic from 2016-11.

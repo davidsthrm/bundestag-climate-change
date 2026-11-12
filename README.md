@@ -29,7 +29,9 @@ speaking *against* it. Analysed overall and within parties, because party compos
 **H2: Local vs. distant signals.** Attention reacts more strongly to local signals than to global ones:
 German vs. global temperature anomaly, German vs. non-German disasters (same EM-DAT data, no extra source).
 German disasters are rare (most months 0), so this part may stay descriptive. A hand-picked event study
-(~10 events) is optional and descriptive only.
+(~10 events) is optional and descriptive only. German heat-related deaths (RKI, 2016–2026) are part of H2
+as a descriptive weekly event study only: heat weeks against parliamentary attention, not a predictor in
+the model. Added on 12 Nov 2026, before any attention results (#26, PR #27).
 
 **H3: Stance.** Stance on climate action (pro / neutral / contra) differs between parties and between
 government and opposition. Tested with three methods: lexicon + TF-IDF, embeddings + classifier, LLM.
