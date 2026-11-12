@@ -9,7 +9,9 @@ script prefix (e.g. `02_precision_by_period.csv`).
 ## Key numbers for the paper
 | Value | Meaning | Produced by script | Commit |
 |---|---|---|---|
-| 273 | months in `disasters_monthly.csv` (2004-01..2026-09), no gaps | `src/04b_disasters.py` | bf3dcbf |
-| 230–335 | climate-related events per year outside Germany, 2004–2025 (no upward reporting trend) | `src/04b_disasters.py` (`04b_disasters_per_year.csv`) | bf3dcbf |
-| 50 of 273 | months with at least one German climate-related event | `src/04b_disasters.py` | bf3dcbf |
-| 45 rows / 10 deaths | events since 2004 dropped for missing start month | `src/04b_disasters.py` | bf3dcbf |
+| 273 | months in `disasters_monthly.csv` (2004-01..2026-09), no gaps | `src/04b_disasters.py` | c6f182e |
+| 227–334 | climate-related events per year worldwide, 2004–2025 (unique events) | `src/04b_disasters.py` (`04b_disasters_per_year.csv`) | c6f182e |
+| +8.1 % | mean events per year 2015–2025 (281.6) vs. 2004–2014 (260.5): mild reporting rise | `src/04b_disasters.py` (`04b_disasters_per_year.csv`) | c6f182e |
+| 55 / 47 | German events 2004–2026, of which also in other countries | `src/04b_disasters.py` | c6f182e |
+| 50 of 273 | months with at least one German climate-related event | `src/04b_disasters.py` | c6f182e |
+| 45 rows / 10 deaths | events with start year 2004–2026 dropped for missing start month | `src/04b_disasters.py` | c6f182e |
