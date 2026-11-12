@@ -1,7 +1,9 @@
 """Harmonise manually exported Google Trends CSVs (see README, "Google Trends export").
 
-Input : data/raw/trends/*.csv  (each export = up to 5 terms requested together, region DE)
+Input : data/raw/trends/*.csv  (each export = one entry requested alone, region DE)
+        data/raw/trends/check/*.csv  (re-exports <name>_2.csv for the sampling check, #4; not in the output)
 Output: data/processed/trends_monthly.csv  (month, term, index, file)
+        results/2_data_understanding/tables/05_trends_reexport.csv  (only if check/ has files)
 
 Notes
 - Values are relative (0-100) *within one export*; only terms from the same file are
@@ -20,8 +22,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw" / "trends"
+CHECK = RAW / "check"  # re-exports for the sampling check (#4); not part of the output
 OUT = ROOT / "data" / "processed" / "trends_monthly.csv"
+TABLES = ROOT / "results" / "2_data_understanding" / "tables"
 SETTINGS = yaml.safe_load((ROOT / "config" / "settings.yaml").read_text(encoding="utf-8"))
+START, END = SETTINGS["start_date"][:7], (SETTINGS["end_date"] or "9999-12")[:7]
 
 HEADER_RE = re.compile(r'^"?(month|monat|time|zeit|woche|week|tag|day)"?\s*,', re.I)
 
@@ -46,17 +51,35 @@ def read_export(path: Path) -> pd.DataFrame:
     return long[["month", "term", "index", "file"]]
 
 
+def reexport_check() -> None:
+    """Compare each re-export in check/ (<name>_2.csv) with the first export <name>.csv (#4)."""
+    rows = []
+    for f in sorted(CHECK.glob("*.csv")):
+        first = RAW / (re.sub(r"_\d+$", "", f.stem) + ".csv")
+        m = (read_export(first).merge(read_export(f), on=["month", "term"], suffixes=("_1", "_2"))
+             .query("@START <= month <= @END").sort_values("month"))
+        d = m[["index_1", "index_2"]].diff()
+        rows.append({"file_1": first.name, "file_2": f.name, "months": len(m),
+                     "r_levels": m.index_1.corr(m.index_2), "r_changes": d.index_1.corr(d.index_2),
+                     "max_abs_diff": (m.index_1 - m.index_2).abs().max()})
+    if rows:
+        TABLES.mkdir(parents=True, exist_ok=True)
+        res = pd.DataFrame(rows).round(3)
+        res.to_csv(TABLES / "05_trends_reexport.csv", index=False)
+        print("\nre-export check (#4)\n" + res.to_string(index=False))
+
+
 def main() -> None:
     files = sorted(RAW.glob("*.csv"))
     if not files:
         raise SystemExit("No CSVs in data/raw/trends/ - do the manual export first (README).")
     out = pd.concat([read_export(f) for f in files], ignore_index=True).dropna(subset=["month"])
-    start, end = SETTINGS["start_date"][:7], (SETTINGS["end_date"] or "9999-12")[:7]
-    out = out[out["month"].between(start, end)]
+    out = out[out["month"].between(START, END)]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     out.sort_values(["file", "term", "month"]).to_csv(OUT, index=False)
     print(f"wrote {OUT.relative_to(ROOT)}")
     print(out.groupby(["file", "term"])["month"].agg(["min", "max", "count"]).to_string())
+    reexport_check()
 
 
 if __name__ == "__main__":
