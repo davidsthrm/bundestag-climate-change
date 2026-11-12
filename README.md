@@ -29,7 +29,9 @@ speaking *against* it. Analysed overall and within parties, because party compos
 **H2: Local vs. distant signals.** Attention reacts more strongly to local signals than to global ones:
 German vs. global temperature anomaly, German vs. non-German disasters (same EM-DAT data, no extra source).
 German disasters are rare (most months 0), so this part may stay descriptive. A hand-picked event study
-(~10 events) is optional and descriptive only.
+(~10 events) is optional and descriptive only. German heat-related deaths (RKI, 2016–2026) are part of H2
+as a descriptive weekly event study only: heat weeks against parliamentary attention, not a predictor in
+the model. Added on 12 Nov 2026, before any attention results (#26, PR #27).
 
 **H3: Stance.** Stance on climate action (pro / neutral / contra) differs between parties and between
 government and opposition. Tested with three methods: lexicon + TF-IDF, embeddings + classifier, LLM.
@@ -60,6 +62,7 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | 3 | `src/03_stance.py`      | stance label per window (relevant sentence ± 2 sentences) |
 | 4 | `src/04_temperature.py` | monthly temperature anomalies DE + global |
 | 4b | `src/04b_disasters.py` | monthly climate-related disasters (EM-DAT), Germany + rest of world |
+| 4c | `src/04c_heat_mortality.py` | heat-related deaths in Germany (RKI), monthly 2016–today, yearly 2004–today |
 | 5 | `src/05_trends.py`      | monthly Google Trends index (DE) |
 | 6 | `src/06_merge.py`       | one monthly panel in `data/processed/` |
 
@@ -73,6 +76,7 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | Temperature global | NASA GISTEMP v4, global land-ocean index | 1880 – last month | `src/00_download.py temperature` |
 | Public attention | Google Trends, region DE | 2004 – today, monthly | manual CSV export (below) |
 | Climate disasters | EM-DAT (CRED, UCLouvain), free for academic use after registration, no redistribution | 2000 – today (our export), one row per event and country | manual export (below) |
+| Heat-related deaths Germany | RKI weekly report on heat-related mortality (model estimate); before 2016 Winklmayr et al. 2022 ([10.3238/arztebl.m2022.0202](https://doi.org/10.3238/arztebl.m2022.0202)), eTable in `config/heat_deaths_paper.yaml` | weekly 2016 – today (summer weeks 15–40); yearly 2004–2021 from the paper (which covers 1992–2021) | `src/00_download.py rki` |
 
 All URLs are in `config/sources.yaml`. Raw data is **not** in git: each person runs the
 download script locally. Every download is logged with URL, access time and SHA-256 in
@@ -84,6 +88,7 @@ python src/01a_wp21_to_policorp.py   # -> data/interim/wp21_policorp.json (--val
 python src/01_speeches.py            # -> data/interim/sentences.parquet
 python src/04_temperature.py         # -> data/processed/temperature_monthly.csv
 python src/04b_disasters.py          # -> data/processed/disasters_monthly.csv
+python src/04c_heat_mortality.py     # -> data/processed/heat_mortality_monthly.csv + _yearly.csv
 python src/05_trends.py              # -> data/processed/trends_monthly.csv
 ```
 
@@ -156,6 +161,10 @@ Single sentences are too short for stance (many need the previous sentence to be
   13–16 months late (the 2026 heatwave is missing). Use the RKI series for German heat deaths (#26);
   event counts rise only mildly (about +8 % from 2004–2014 to 2015–2025).
 - EM-DAT adds events late: the last months of the export (2026) are incomplete.
+- RKI heat deaths are model estimates (deaths with minus without heat), not counted deaths; the RKI
+  revises them during the summer. Heat kills with a delay: about 40 % of the deaths of the June 2026 heat
+  week fall into the following week, so monthly sums split heatwaves at month ends. Before 2016 only
+  yearly values from an earlier model version exist (2016–2021: up to 500 deaths apart).
 
 ## Setup
 ```bash

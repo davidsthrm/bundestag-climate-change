@@ -49,3 +49,13 @@ emdat:
   portal_url: "https://public.emdat.be"
   subgroups: [Climatological, Hydrological, Meteorological]   # climate-related; no geophysical (#2, #17)
   country_iso: "DEU"                                          # Germany; everything else = rest of world
+
+rki_heat:
+  # RKI weekly report on heat-related mortality ("Wochenbericht zur hitzebedingten Mortalität"), #26.
+  # Weekly model estimates 2016-today (summer weeks 15-40), Germany. RKI terms (rki.de/legal-notice):
+  # quoting and scientific use with source citation allowed, no editing of the content; raw files
+  # stay out of git. The CSVs are updated weekly in summer: delete them to refresh.
+  report_page: "https://www.rki.de/DE/Themen/Gesundheit-und-Gesellschaft/Gesundheitliche-Einflussfaktoren-A-Z/H/Hitze/Bericht_Hitzemortalitaet.html"
+  weekly_csv: "https://www.rki.de/DE/Themen/Gesundheit-und-Gesellschaft/Gesundheitliche-Einflussfaktoren-A-Z/H/Hitze/Daten_Hitzemortalitaet_Abb2.csv?__blob=publicationFile"
+  yearly_csv: "https://www.rki.de/DE/Themen/Gesundheit-und-Gesellschaft/Gesundheitliche-Einflussfaktoren-A-Z/H/Hitze/Daten_Hitzemortalitaet_Abb3.csv?__blob=publicationFile"
+  # Years before 2016: config/heat_deaths_paper.yaml (Winklmayr et al. 2022, eTable).
