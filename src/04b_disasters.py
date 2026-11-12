@@ -3,15 +3,17 @@
 Input : data/raw/disasters/*.xlsx  (one manual EM-DAT export, see README "EM-DAT export (manual)")
 Output: data/processed/disasters_monthly.csv
         columns: month (YYYY-MM), events_/deaths_/affected_ x de, row, global
-        (de = Germany, row = rest of world, global = all countries)
+        (de = Germany, row = rest of world without German events, global = all countries)
         results/3_data_preparation/tables/04b_disasters_per_year.csv (data check: reporting bias)
 
 Rules (#17)
 - Only the subgroups in config/sources.yaml (climatological, hydrological, meteorological).
 - EM-DAT has one row per event and country (DisNo. "2021-0359-DEU"). Events are counted once per
   region by the ID without the country code; deaths and affected are summed over the rows.
-  An event that hits Germany and other countries counts in de and in row, but once in global,
-  so global events != events_de + events_row (deaths and affected do add up).
+- An event that hits Germany and other countries is a German event: it counts in de only, with
+  the German deaths / affected. Its rows for the other countries count only in global.
+  So events_de + events_row = events_global, but deaths / affected of de + row can be lower
+  than global.
 - Everything goes to the start month. Events without a start month are dropped (and reported).
 - Blank deaths / affected = not reported, counted as 0.
 - Every month from start_date to end_date is present; months without events are 0.
@@ -70,10 +72,7 @@ def checks(df: pd.DataFrame, out: pd.DataFrame) -> None:
 
     zero_de = (out["events_de"] == 0).sum()
     print(f"\nmonths without a German event: {zero_de} of {len(out)}")
-    local = df[df["region"] != "global"]
-    both = local.groupby("event_id")["region"].nunique().gt(1).sum()
-    split = local.groupby(["event_id", "region"])["month"].nunique().gt(1).sum()
-    print(f"events in Germany and elsewhere (counted in both): {both}")
+    split = df[df["region"] == "global"].groupby("event_id")["month"].nunique().gt(1).sum()
     print(f"events with different start months per country (counted in each month): {split}")
     print("\nlast 6 months (EM-DAT adds events late: low values may be incomplete)")
     print(out.tail(6).to_string())
@@ -105,9 +104,15 @@ def main() -> None:
     if df["month"].max() < end:
         raise SystemExit(f"Export ends {df['month'].max()}, end_date is {end}: export again.")
     df = df[df["month"].between(start, end)].copy()
-    df["region"] = np.where(df["ISO"] == CFG["country_iso"], "de", "row")
     df["event_id"] = df["DisNo."].str.rsplit("-", n=1).str[0]
-    df = pd.concat([df, df.assign(region="global")], ignore_index=True)
+    is_de = df["ISO"] == CFG["country_iso"]
+    german = df["event_id"].isin(df.loc[is_de, "event_id"])
+    shared = df[german & ~is_de]
+    print(f"German events also in other countries: {shared['event_id'].nunique()} of "
+          f"{df.loc[is_de, 'event_id'].nunique()} (counted as German; other-country rows only in global: "
+          f"{shared['Total Deaths'].sum():.0f} deaths, {shared['Total Affected'].sum():.0f} affected)")
+    df = pd.concat([df[is_de].assign(region="de"), df[~german].assign(region="row"),
+                    df.assign(region="global")], ignore_index=True)
 
     agg = df.groupby(["month", "region"]).agg(events=("event_id", "nunique"),
                                              deaths=("Total Deaths", "sum"),

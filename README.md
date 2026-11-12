@@ -117,8 +117,8 @@ python -c "import importlib, pathlib, sys; sys.path.insert(0, 'src'); d = import
 `04b_disasters.py` keeps the subgroups climatological, hydrological, meteorological (`config/sources.yaml`),
 counts each event once per region (ID without the country code), puts deaths and affected into the
 start month and fills months without events with 0. Regions: Germany (`de`), rest of world (`row`) and
-all countries (`global`); an event that hits Germany and other countries counts in `de` and `row`, so
-global events are not `events_de + events_row`. The licence forbids redistribution: never commit
+all countries (`global`). An event that hits Germany and other countries is a German event: it counts
+in `de` (German deaths / affected) and in `global`, not in `row`. The licence forbids redistribution: never commit
 the export or share it outside the team.
 
 ### Units of analysis

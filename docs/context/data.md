@@ -95,22 +95,27 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   `Total Affected`.
 - Processed: `data/processed/disasters_monthly.csv`, written by `src/04b_disasters.py`: 273 rows,
   2004-01..2026-09; columns `month` and `events_*`, `deaths_*`, `affected_*` for `de` (Germany,
-  ISO DEU), `row` (rest of world) and `global` (all countries); months without events = 0.
+  ISO DEU), `row` (rest of world: events that did not hit Germany) and `global` (all countries);
+  months without events = 0.
 - Rules (#17): subgroups climatological, hydrological, meteorological (`config/sources.yaml`);
   events counted once per region by `DisNo.` without the country code; deaths and affected summed
   over rows; everything in the start month; blank deaths / affected = 0; events without start month
   dropped (45 rows with start year 2004–2026, 10 deaths).
 - Caveats:
-  - Germany: 55 events in 50 of 273 months; 47 of them also hit other countries (mostly European storms
-    and floods) and count in `de` and `row`, but once in `global`. So `events_global` is not
-    `events_de + events_row`; deaths and affected do add up.
+  - Germany: 55 events in 50 of 273 months; 47 of them also hit other countries (mostly European storms,
+    floods, heatwaves). They are German events: in `de` with the German deaths / affected; their rows
+    for the other countries (182,105 deaths, 2.3 M affected) count only in `global`, not in `row` (#17,
+    PR #24). So deaths / affected of `de` + `row` are lower than `global`; events add up except in
+    18 months where a German event starts in another month elsewhere.
+  - Because the large European heatwaves 2022–2024 also hit Germany, `deaths_row` 2022–2024 is
+    13–25 k per year, while `deaths_global` is 72–79 k.
   - 107 events start in different months in different countries and count in each of those months.
   - Heatwave deaths: from 2022, extreme-temperature events carry excess-mortality estimates
     (DE: 8,173 in 2022-05, 6,376 in 2023-07, 6,282 in 2024-06, 2,445 in 2025-07), earlier heatwaves
     almost none (2018, 2019: blank or < 10). Deaths have a recording break.
   - Event counts: 227–334 events per year worldwide (2004–2025), about +8 % from 2004–2014
     (mean 260.5) to 2015–2025 (mean 281.6): a mild rise, no strong reporting trend.
-  - Late reporting: 2026 has ~15 events per month outside Germany vs. ~24–25 in 2023–2025, so the
+  - Late reporting: 2026 has ~15 events per month worldwide vs. ~24–25 in 2023–2025, so the
     last months are incomplete.
   - Some events have a start month after the export date (2026-11, 2026-12); outside the window.
   - Per-year counts (unique events per year): `results/3_data_preparation/tables/04b_disasters_per_year.csv`.
