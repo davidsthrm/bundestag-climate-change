@@ -5,6 +5,7 @@ Usage (from repo root):
     python src/00_download.py temperature   # only DWD + GISTEMP (small, ~1 MB)
     python src/00_download.py policorp      # PoliCorp zip (~880 MB) + extract LP 15-20
     python src/00_download.py wp21          # 21st Bundestag XML protocols + 3 WP20 sessions (validation) + MdB master data
+    python src/00_download.py rki           # RKI heat-related mortality (weekly + yearly CSV)
 
 Already downloaded files are skipped (delete them to refresh).
 Every download is logged with URL, access time and SHA-256 in data/raw/MANIFEST.csv
@@ -180,7 +181,15 @@ def get_wp21() -> None:
     download(cfg["mdb_stammdaten_url"], out.parent / "MdB-Stammdaten.zip", session=s)
 
 
-TASKS = {"temperature": get_temperature, "policorp": get_policorp, "wp21": get_wp21}
+def get_rki() -> None:
+    print("RKI heat-related mortality (weekly report)")
+    cfg = SOURCES["rki_heat"]
+    out = RAW / "heat"
+    download(cfg["weekly_csv"], out / "rki_hitzemortalitaet_weekly.csv")
+    download(cfg["yearly_csv"], out / "rki_hitzemortalitaet_yearly.csv")
+
+
+TASKS = {"temperature": get_temperature, "policorp": get_policorp, "wp21": get_wp21, "rki": get_rki}
 
 if __name__ == "__main__":
     chosen = sys.argv[1:] or list(TASKS)

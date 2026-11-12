@@ -123,6 +123,36 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   - Some events have a start month after the export date (2026-11, 2026-12); outside the window.
   - Per-year counts (unique events per year): `results/3_data_preparation/tables/04b_disasters_per_year.csv`.
 
+## Heat-related deaths (RKI)
+- Origin: RKI weekly report on heat-related mortality ("Wochenbericht zur hitzebedingten Mortalität"),
+  `src/00_download.py rki`; URLs in `config/sources.yaml` (`rki_heat`). RKI terms (rki.de/legal-notice):
+  quoting and scientific use with source citation allowed, no editing of the content (#26).
+- Raw: `data/raw/heat/rki_hitzemortalitaet_weekly.csv` (`Berichtsdatum`, `Jahr`, `Woche`, `Halbjahr`,
+  `Wochenmitteltemperatur`, `Wochen_Einordnung` normal / heiß, `Tot_gesamt`, `Modell` mit / ohne Hitze,
+  `Modell_Punktschätzer`, `Modell_untere_PG`, `Modell_obere_PG`; `;`-separated, decimal comma, `NA`);
+  model values only for summer weeks 15–40, 2016–2026 (2026 up to week 37, report of 24.09.2026).
+  `data/raw/heat/rki_hitzemortalitaet_yearly.csv` (`Berichtsdatum`, `Jahr`, `Modell_Punktschätzer`,
+  `Modell_untere_PG`, `Modell_obere_PG`, `Bevölkerung`; thousands with `.`), 2016–2026.
+- Before 2016: `config/heat_deaths_paper.yaml`, eTable of Winklmayr et al. 2022 (2004–2021, estimate
+  and 95 % CI), copied by hand because the PMC page blocks scripted downloads.
+- Processed (`src/04c_heat_mortality.py`):
+  - `data/processed/heat_mortality_monthly.csv`: 129 rows, 2016-01..2026-09; `month`,
+    `heat_deaths_de` (sum of weekly "mit" − "ohne Hitze"; week → month of its Thursday),
+    `weeks_modelled` (0 in winter, where `heat_deaths_de` = 0).
+  - `data/processed/heat_mortality_yearly.csv`: 23 rows, 2004–2026; `year`, `heat_deaths_de`, `lower`,
+    `upper`, `source` (paper before 2016, RKI report from 2016).
+- Caveats:
+  - Model estimates, revised during the summer; the report date is in `source`.
+  - Weekly sums match the RKI yearly values up to rounding (max. 127 deaths apart, 2018);
+    `results/3_data_preparation/tables/04c_heat_yearly_check.csv`.
+  - Paper (older model) vs. report, 2016–2021: 1,800 / 1,400, 1,400 / 1,280, 8,700 / 9,000,
+    6,900 / 7,400, 3,700 / 3,500, 1,700 / 1,640.
+  - Heat kills with a delay: June 2026 heat week 26 = 5,716, week 27 = 3,908 (together the ~9,600
+    reported). Week 27 counts in July, so monthly values split heatwaves at month ends.
+  - Small negative values in cool weeks (min. −43 per week), e.g. 2026-04 = −21; kept, as in the
+    RKI yearly sums.
+  - 2026-09 has only 2 modelled weeks (report ended with week 37).
+
 ## Planned outputs (scripts are stubs)
 - `data/interim/sentences_relevant.parquet` (`src/02_relevance.py`, #5).
 - `data/interim/windows_stance.parquet` (`src/03_stance.py`).
