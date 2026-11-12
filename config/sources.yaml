@@ -37,6 +37,7 @@ temperature:
   baseline: [1991, 2020]   # WMO climate normal; both series are re-baselined to this
 
 trends:
+  portal_url: "https://trends.google.de"   # logged in MANIFEST.csv for manual exports
   # Google Trends cannot be downloaded reliably by script -> manual CSV export,
   # see README ("Google Trends export"). Files go into data/raw/trends/.
   geo: "DE"

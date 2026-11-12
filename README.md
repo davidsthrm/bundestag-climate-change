@@ -99,8 +99,16 @@ Download via the ↓ icon of "Interesse im zeitlichen Verlauf".
 | `B_topic_klima.csv`       | Klima (Thema)       | broad climate attention |
 
 Note the export date in `data/raw/MANIFEST.csv`. Google samples the data, so a re-export on another
-day can differ slightly; for robustness export A a second time on a different day
-(`A_term_klimawandel_2.csv`) and check the correlation.
+day can differ slightly; for robustness export A a second time on a different day with the same
+settings and end date, as `data/raw/trends/check/A_term_klimawandel_2.csv` (outside the folder that
+`05_trends.py` merges). Log it in the manifest right away:
+
+```bash
+python -c "import importlib, pathlib, sys; sys.path.insert(0, 'src'); d = importlib.import_module('00_download'); [d.log_manifest(p.resolve(), d.SOURCES['trends']['portal_url']) for p in pathlib.Path('data/raw/trends/check').glob('*.csv')]"
+```
+
+`05_trends.py` then compares it with the first export (correlation of levels and of month-to-month
+changes) and writes `results/2_data_understanding/tables/05_trends_reexport.csv`.
 
 ### Units of analysis
 | Measure | Unit | Setting |
@@ -123,6 +131,10 @@ Single sentences are too short for stance (many need the previous sentence to be
   The Linke group gap (6 Dec 2023 – 1 Feb 2024) gets the group the MPs joined afterwards (Linke or BSW).
   `config/party_overrides.yaml` covers ministers who are not MPs, state politicians, wrong IDs in
   PoliCorp and the PDS 2002–05. About 50 speeches (civil servants, commissioners) stay without party.
+- Government dates (`config/governments.yaml`) match the Bundestag Datenhandbuch, chapter 6 (checked
+  12 Nov 2026). The Datenhandbuch does not list the SPD–Greens minority phase (7 Nov 2024 – 6 May 2025)
+  as a separate government; we start it with the dismissal of the FDP ministers on 7 Nov 2024 (ch. 6.12).
+  The coalition crisis since July 2026 has not changed the coalition parties (as of 12 Nov 2026).
 - GISTEMP anomalies are relative to 1951–1980; `04_temperature.py` re-baselines both series
   to 1991–2020 per calendar month.
 - The climate-change topics ("Klimawandel", "Global warming") are 0 in Germany from 2017 to 2020,
@@ -132,6 +144,9 @@ Single sentences are too short for stance (many need the previous sentence to be
 - One-week spikes: Klimawandel 17–24 Apr 2022 (= 100), Klimaschutz Apr 2023 (= 100). Kept in the data;
   check results with and without these months.
 - `B_topic_hitzewelle` is dominated by summer 2026 (= 100); values before 2018 are mostly 0–3.
+- Google samples the data: a second export of Klimawandel on another day correlates with the first at
+  r = 0.998 (levels) and r = 0.997 (month-to-month changes), at most 2 index points apart
+  (273 months, `results/2_data_understanding/tables/05_trends_reexport.csv`). Sampling noise is negligible.
 - Google changed its data collection on 1 Jan 2011, 2016, 2017 and 2022 (marked "Hinweis" in Trends).
 
 ## Setup

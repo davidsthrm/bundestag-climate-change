@@ -50,7 +50,8 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
 - Party = parliamentary group on the speech date; rules and exceptions (CDU/CSU merged, Linke
   group gap, overrides, ~50 speeches without party): [README.md, "Known caveats"](../../README.md#known-caveats).
 - `party_in_government`: party is a coalition party on the speech date (`config/governments.yaml`);
-  government dates before Nov 2024 still to verify (#4).
+  dates checked against the Bundestag Datenhandbuch, chapter 6, on 12 Nov 2026 (#4); the minority
+  phase from 7 Nov 2024 is not a separate cabinet there but follows from the FDP dismissals (ch. 6.12).
 - Months without sittings (e.g. August recess) have no sentences, so no attention value.
 
 ## Temperature
@@ -69,7 +70,8 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   (steps in the README).
 - Raw: `data/raw/trends/*.csv`: `A_term_klimawandel.csv`, `B_topic_klimaschutz.csv`,
   `B_topic_hitzewelle.csv`, `B_topic_klima.csv`; two columns `Time`, `<term>`, monthly,
-  values 0..100.
+  values 0..100. `data/raw/trends/check/A_term_klimawandel_2.csv`: second export of the main series
+  on another day, same settings; not merged, only compared (#4).
 - Processed: `data/processed/trends_monthly.csv`, written by `src/05_trends.py`: 1092 rows
   (4 terms × 273 months), 2004-01..2026-09; columns `month`, `term`, `index`, `file`.
 - Terms: Klimawandel (main series, file `A_term_klimawandel.csv`), Klima, Klimaschutz, Hitzewelle
@@ -81,8 +83,9 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   - One-week spikes: Klimawandel Apr 2022 (= 100), Klimaschutz Apr 2023 (= 100); kept in the
     data, check results with and without these months.
   - Hitzewelle is dominated by summer 2026; values before 2018 are mostly 0–3.
-  - Google samples the data and changed its collection on 1 Jan 2011, 2016, 2017 and 2022;
-    second export of the main series for a correlation check is open (#4).
+  - Google samples the data and changed its collection on 1 Jan 2011, 2016, 2017 and 2022.
+    Second export of the main series vs. the first: r = 0.998 (levels), r = 0.997 (month-to-month
+    changes), max. difference 2 index points, 273 months (`results/2_data_understanding/tables/05_trends_reexport.csv`, #4).
 
 ## Disasters (EM-DAT), planned
 - Not in the repo yet: #17 (`src/04b_disasters.py`).
