@@ -84,12 +84,32 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   - Google samples the data and changed its collection on 1 Jan 2011, 2016, 2017 and 2022;
     second export of the main series for a correlation check is open (#4).
 
-## Disasters (EM-DAT), planned
-- Not in the repo yet: #17 (`src/04b_disasters.py`).
-- Planned: manual export (login needed) into `data/raw/disasters/`; processed
-  `data/processed/disasters_monthly.csv`, monthly, Germany and rest of world.
-- Subgroups climatological, hydrological, meteorological; no geophysical events.
-- Licence does not allow redistribution.
+## Disasters (EM-DAT)
+- Origin: EM-DAT (CRED, UCLouvain), public.emdat.be, free for academic use after registration;
+  licence does not allow redistribution. Manual export (login), steps in the README.
+- Raw: `data/raw/disasters/public_emdat_custom_request.xlsx` (one file), sheets `EM-DAT Data`
+  (10,949 rows, 47 columns) and `EM-DAT Info`. Export settings: classification Natural, all countries,
+  start years 2000–2026. One row per event and country; `DisNo.` = `YYYY-NNNN-ISO`.
+  Columns used: `DisNo.`, `Disaster Subgroup`, `ISO`, `Start Year`, `Start Month`, `Total Deaths`,
+  `Total Affected`.
+- Processed: `data/processed/disasters_monthly.csv`, written by `src/04b_disasters.py`: 273 rows,
+  2004-01..2026-09; columns `month`, `events_de`, `deaths_de`, `affected_de`, `events_row`,
+  `deaths_row`, `affected_row` (de = Germany, ISO DEU; row = rest of world); months without events = 0.
+- Rules (#17): subgroups climatological, hydrological, meteorological (`config/sources.yaml`);
+  events counted once per region by `DisNo.` without the country code; deaths and affected summed
+  over rows; everything in the start month; blank deaths / affected = 0; events without start month
+  dropped (45 rows since 2004, 10 deaths).
+- Caveats:
+  - Germany: events in 50 of 273 months; 47 events hit Germany and other countries and count in both.
+  - 107 events start in different months in different countries and count in each of those months.
+  - Heatwave deaths: from 2022, extreme-temperature events carry excess-mortality estimates
+    (DE: 8,173 in 2022-05, 6,376 in 2023-07, 6,282 in 2024-06, 2,445 in 2025-07), earlier heatwaves
+    almost none (2018, 2019: blank or < 10). Deaths have a recording break; event counts are stable
+    (~230–335 events per year outside Germany, 2004–2025, no upward trend).
+  - Late reporting: 2026 has ~15 events per month outside Germany vs. ~24–25 in 2023–2025, so the
+    last months are incomplete.
+  - Some events have a start month after the export date (2026-11, 2026-12); outside the window.
+  - Per-year counts: `results/3_data_preparation/tables/04b_disasters_per_year.csv`.
 
 ## Planned outputs (scripts are stubs)
 - `data/interim/sentences_relevant.parquet` (`src/02_relevance.py`, #5).
