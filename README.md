@@ -56,7 +56,7 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | 0 | `src/00_download.py`    | raw data into `data/raw/` (+ MANIFEST.csv) |
 | 1a | `src/01a_wp21_to_policorp.py` | 21st Bundestag XML in PoliCorp format (`data/interim/wp21_policorp.json`) |
 | 1 | `src/01_speeches.py`    | all speeches 2004–today, one row per sentence, with party and government/opposition (`config/governments.yaml`) (`data/interim/sentences.parquet`) |
-| 2 | `src/02_relevance.py`   | climate-relevant sentences (keyword dictionary) + main-topic speeches |
+| 2 | `src/02_relevance.py`   | climate-relevant sentences (keyword dictionary, substring match) + main-topic speeches |
 | 3 | `src/03_stance.py`      | stance label per window (relevant sentence ± 2 sentences) |
 | 4 | `src/04_temperature.py` | monthly temperature anomalies DE + global |
 | 4b | `src/04b_disasters.py` | monthly climate-related disasters (EM-DAT), Germany + rest of world |

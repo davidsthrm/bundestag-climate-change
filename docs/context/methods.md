@@ -5,13 +5,24 @@ Agreed thresholds and criteria: [decisions.md](decisions.md). Values: `config/se
 `#N` = issue or pull request N of this repository.
 
 ## Relevance (#5)
-- Keyword dictionary `config/keywords_de.yaml`, matched case-insensitively; script `src/02_relevance.py` (stub).
-- Groups: `core` (relevance filter), `energy` (weaker signal), `sceptic_markers` (for stance
-  validation, not for filtering).
-- Open: whether `energy` terms count only together with a `core` term.
+- Keyword dictionary `config/keywords_de.yaml`; script `src/02_relevance.py`.
+- Matching: text lowercased, "co 2" / "co₂" normalised to "co2" (2,034 sentences write CO 2 with a
+  space), then substring match, so compounds match (klimaschutz -> Klimaschutzgesetz). No
+  lemmatiser, no fuzzy matching: no typos were found.
+- Relevant = any `core` term, or the standalone word Klima/Klimas/"Klima- und ..." unless the
+  sentence has a phrase from `klima_plain.exclude` (metaphors such as "politisches Klima").
+- `energy` and `sceptic_markers` are flags only (15,510 of 18,321 energy sentences have no climate
+  term). Core + energy is a robustness variant.
 - Output unit: sentence (attention a) and speech (main topic b), see decisions.md.
-- Quality: precision/recall check of the dictionary.
-- Main-topic threshold (20 %, ≥ 2 hits) is provisional and rechecked here.
+- Quality: check sample `annotation/02_relevance_check.csv` (80 core hits spread over the terms,
+  20 standalone-Klima hits, 50 unflagged sentences containing "klima"), summary
+  `results/3_data_preparation/tables/02_relevance_check_summary.csv`. First labels by Claude,
+  human review pending.
+- Open (PR for #5): recall. 44 of 50 unflagged "klima" sentences are about climate (Klimafonds,
+  klimapolitisch, Klimageld, Weltklima, Klimahysterie ...). Proposed fix: every word starting with
+  "klima" counts (except Klimaanlage, klimatisieren, Klimastiftung), plus "weltklima": +6,757 sentences.
+- Main-topic threshold (20 %, ≥ 2 hits) is kept for now; 2,408 speeches pass, 325 of them have
+  ≤ 5 sentences.
 
 ## Stance (#6, #7, #9, #10, #11, #13)
 - Labels: pro climate action / neutral / contra.

@@ -126,7 +126,17 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   - Some events have a start month after the export date (2026-11, 2026-12); outside the window.
   - Per-year counts (unique events per year): `results/3_data_preparation/tables/04b_disasters_per_year.csv`.
 
+## Climate-relevant sentences
+- File: `data/interim/sentences_relevant.parquet`, written by `src/02_relevance.py` (#5).
+- All 5,142,813 sentences with the columns of `sentences.parquet`, plus `relevant`,
+  `hit_klima_plain` (relevant only through the standalone word Klima), `energy`, `sceptic`,
+  `matched` (matched core terms, `;`-separated), and per speech `speech_n`, `speech_hits`,
+  `speech_share`, `main_topic`.
+- 54,664 relevant sentences (1.06 %), 0.56 % in WP15 up to 1.78 % in WP21; 2,408 main-topic speeches.
+- 7 months have no relevant sentence (small or constituent-session months): 2005-10, 2009-10,
+  2012-07, 2013-10, 2015-08, 2017-10, 2021-10.
+- Tables: `results/3_data_preparation/tables/02_counts_month_party.csv`, `02_keyword_hits.csv`.
+
 ## Planned outputs (scripts are stubs)
-- `data/interim/sentences_relevant.parquet` (`src/02_relevance.py`, #5).
 - `data/interim/windows_stance.parquet` (`src/03_stance.py`).
 - `data/processed/panel_monthly.csv` (`src/06_merge.py`, #8).

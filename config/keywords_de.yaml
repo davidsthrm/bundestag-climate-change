@@ -1,6 +1,7 @@
-# Climate keyword dictionary (relevance filter, NOT stance).
-# Matched case-insensitively on lemmas/lowercased text. Extend as you go.
-core:
+# Climate keyword dictionary (relevance filter, NOT stance). Used by src/02_relevance.py (#5).
+# Matching: text lowercased, "co 2" / "co₂" normalised to "co2", then plain substring match,
+# so compounds and inflections match (klimaschutz -> Klimaschutzgesetz, klimaschutzziele).
+core:              # a sentence with any core term is climate-relevant
   - klimawandel
   - klimakrise
   - klimaschutz
@@ -15,7 +16,37 @@ core:
   - kohlendioxid
   - pariser abkommen
   - klimaabkommen
-energy:            # weaker signal – only count together with a core term?
+  - klimapolitik
+  - klimaanpassung
+  - klimafolgen
+  - klimakonferenz
+  - klimagipfel
+  - klimaschädlich
+  - klimafreundlich
+  - kyoto
+  - kioto            # older German spelling (Kiotoprotokoll, Kiotoverpflichtung)
+  - klimakatastrophe
+  - klimaveränderung
+  - klimaerwärmung
+  - klimafinanzierung
+  - klimapaket
+  - weltklimarat
+  - klimagerecht
+  - ipcc
+klima_plain:       # the standalone word "Klima"/"Klimas" and "Klima-" in "Klima- und ..." also count,
+  exclude:         # unless the sentence contains one of these phrases (metaphors, "politisches Klima")
+    - klima der
+    - klima des
+    - klima für
+    - klima zwischen
+    - klima in der gesellschaft
+    - politische klima
+    - politisches klima
+    - gesellschaftliche klima
+    - gesellschaftliches klima
+    - soziale klima
+    - soziales klima
+energy:            # flag only, not relevant on its own (mostly energy policy); core + energy = robustness variant
   - erneuerbare energien
   - energiewende
   - kohleausstieg
@@ -25,7 +56,7 @@ energy:            # weaker signal – only count together with a core term?
   - emissionshandel
   - co2-preis
   - co2-steuer
-sceptic_markers:   # helpful later for stance validation, not for filtering
+sceptic_markers:   # flag only, helpful later for stance validation, not for filtering
   - klimahysterie
   - klimareligion
   - klimapanik

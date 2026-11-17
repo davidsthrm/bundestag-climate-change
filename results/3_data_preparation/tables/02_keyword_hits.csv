@@ -1,0 +1,46 @@
+group,term,n_sentences
+core,klimawandel,5317
+core,klimakrise,1703
+core,klimaschutz,19017
+core,klimaziel,1921
+core,klimaneutral,2329
+core,erderwärmung,344
+core,erderhitzung,57
+core,globale erwärmung,43
+core,treibhausgas,1436
+core,treibhauseffekt,41
+core,co2,12119
+core,kohlendioxid,316
+core,pariser abkommen,125
+core,klimaabkommen,331
+core,klimapolitik,1826
+core,klimaanpassung,546
+core,klimafolgen,152
+core,klimakonferenz,761
+core,klimagipfel,154
+core,klimaschädlich,580
+core,klimafreundlich,1229
+core,kyoto,21
+core,kioto,705
+core,klimakatastrophe,318
+core,klimaveränderung,236
+core,klimaerwärmung,106
+core,klimafinanzierung,183
+core,klimapaket,407
+core,weltklimarat,186
+core,klimagerecht,344
+core,ipcc,254
+energy,erneuerbare energien,2592
+energy,energiewende,7322
+energy,kohleausstieg,1118
+energy,windkraft,1596
+energy,windräder,584
+energy,photovoltaik,1342
+energy,emissionshandel,3027
+energy,co2-preis,848
+energy,co2-steuer,378
+sceptic_markers,klimahysterie,81
+sceptic_markers,klimareligion,57
+sceptic_markers,klimapanik,12
+sceptic_markers,klimaideologie,62
+klima_plain,klima,4899
