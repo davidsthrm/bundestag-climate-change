@@ -1,0 +1,12 @@
+subset,n,climate_share
+hit,80,1.0
+klima_plain,20,0.9
+nonhit,50,0.88
+lp 15,12,1.0
+lp 16,14,0.929
+lp 17,15,1.0
+lp 18,14,1.0
+lp 19,13,1.0
+lp 20,16,1.0
+lp 21,16,0.938
+all flagged,100,0.98

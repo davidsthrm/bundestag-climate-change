@@ -7,4 +7,8 @@ stance_context_window: 2          # sentences before and after a hit
 stance_max_window: 7              # merged windows longer than this are split into windows of at most this length
 main_topic_threshold: 0.2         # share of relevant sentences per speech; provisional, recheck in #5
 main_topic_min_hits: 2            # and at least this many relevant sentences (short speeches)
+relevance_sample_seed: 5          # precision/recall check sample of src/02_relevance.py (#5)
+relevance_sample_hits: 80         # core hits, spread evenly over the Bundestag terms
+relevance_sample_klima_plain: 20  # hits only through the standalone word "Klima"
+relevance_sample_nonhits: 50      # sentences containing "klima" that are not flagged (recall check)
 speaker_roles: [mp, government, federal_council]   # PoliCorp roles kept (not: presidency, misc, parliamentary_commissioner)

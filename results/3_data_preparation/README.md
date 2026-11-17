@@ -9,3 +9,7 @@ script prefix (e.g. `02_precision_by_period.csv`).
 ## Key numbers for the paper
 | Value | Meaning | Produced by script | Commit |
 |---|---|---|---|
+| 54,664 (1.06 %) | climate-relevant sentences of 5,142,813 | `src/02_relevance.py` | this PR (#5) |
+| 2,408 | main-topic speeches (≥ 20 % relevant, ≥ 2 hits) of 206,915 | `src/02_relevance.py` | this PR (#5) |
+| 98 % | precision of flagged sentences (100 check sentences; labels by Claude, human review pending) | `src/02_relevance.py --summarise` | this PR (#5) |
+| 88 % | climate share among unflagged "klima" sentences (50 check sentences), i.e. a recall gap | `src/02_relevance.py --summarise` | this PR (#5) |
