@@ -13,3 +13,10 @@ script prefix (e.g. `02_precision_by_period.csv`).
 | 2,408 | main-topic speeches (≥ 20 % relevant, ≥ 2 hits) of 206,915 | `src/02_relevance.py` | this PR (#5) |
 | 98 % | precision of flagged sentences (100 check sentences; labels by Claude, human review pending) | `src/02_relevance.py --summarise` | this PR (#5) |
 | 88 % | climate share among unflagged "klima" sentences (50 check sentences), i.e. a recall gap | `src/02_relevance.py --summarise` | this PR (#5) |
+| 273 | months in `disasters_monthly.csv` (2004-01..2026-09), no gaps | `src/04b_disasters.py` | 0dde8fd |
+| 227–334 | climate-related events per year worldwide, 2004–2025 (unique events) | `src/04b_disasters.py` (`04b_disasters_per_year.csv`) | 0dde8fd |
+| +8.1 % | mean events per year 2015–2025 (281.6) vs. 2004–2014 (260.5): mild reporting rise | `src/04b_disasters.py` (`04b_disasters_per_year.csv`) | 0dde8fd |
+| 55 / 47 | German events 2004–2026, of which also in other countries (counted as German) | `src/04b_disasters.py` | 0dde8fd |
+| 182,105 | deaths in other countries from German events: only in `deaths_global`, not in `deaths_row` | `src/04b_disasters.py` | 0dde8fd |
+| 50 of 273 | months with at least one German climate-related event | `src/04b_disasters.py` | 0dde8fd |
+| 45 rows / 10 deaths | events with start year 2004–2026 dropped for missing start month | `src/04b_disasters.py` | 0dde8fd |

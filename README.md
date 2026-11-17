@@ -59,6 +59,7 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | 2 | `src/02_relevance.py`   | climate-relevant sentences (keyword dictionary, substring match) + main-topic speeches |
 | 3 | `src/03_stance.py`      | stance label per window (relevant sentence ± 2 sentences) |
 | 4 | `src/04_temperature.py` | monthly temperature anomalies DE + global |
+| 4b | `src/04b_disasters.py` | monthly climate-related disasters (EM-DAT), Germany + rest of world |
 | 5 | `src/05_trends.py`      | monthly Google Trends index (DE) |
 | 6 | `src/06_merge.py`       | one monthly panel in `data/processed/` |
 
@@ -71,6 +72,7 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | Temperature Germany | DWD Climate Data Center, regional averages, monthly mean air temperature (area mean Deutschland) | 1881 – last month | `src/00_download.py temperature` |
 | Temperature global | NASA GISTEMP v4, global land-ocean index | 1880 – last month | `src/00_download.py temperature` |
 | Public attention | Google Trends, region DE | 2004 – today, monthly | manual CSV export (below) |
+| Climate disasters | EM-DAT (CRED, UCLouvain), free for academic use after registration, no redistribution | 2000 – today (our export), one row per event and country | manual export (below) |
 
 All URLs are in `config/sources.yaml`. Raw data is **not** in git: each person runs the
 download script locally. Every download is logged with URL, access time and SHA-256 in
@@ -81,6 +83,7 @@ python src/00_download.py            # all scripted sources (~900 MB, mostly Pol
 python src/01a_wp21_to_policorp.py   # -> data/interim/wp21_policorp.json (--validate: compare with PoliCorp)
 python src/01_speeches.py            # -> data/interim/sentences.parquet
 python src/04_temperature.py         # -> data/processed/temperature_monthly.csv
+python src/04b_disasters.py          # -> data/processed/disasters_monthly.csv
 python src/05_trends.py              # -> data/processed/trends_monthly.csv
 ```
 
@@ -99,8 +102,32 @@ Download via the ↓ icon of "Interesse im zeitlichen Verlauf".
 | `B_topic_klima.csv`       | Klima (Thema)       | broad climate attention |
 
 Note the export date in `data/raw/MANIFEST.csv`. Google samples the data, so a re-export on another
-day can differ slightly; for robustness export A a second time on a different day
-(`A_term_klimawandel_2.csv`) and check the correlation.
+day can differ slightly; for robustness export A a second time on a different day with the same
+settings and end date, as `data/raw/trends/check/A_term_klimawandel_2.csv` (outside the folder that
+`05_trends.py` merges). Log it in the manifest right away:
+
+```bash
+python -c "import importlib, pathlib, sys; sys.path.insert(0, 'src'); d = importlib.import_module('00_download'); [d.log_manifest(p.resolve(), d.SOURCES['trends']['portal_url']) for p in pathlib.Path('data/raw/trends/check').glob('*.csv')]"
+```
+
+`05_trends.py` then compares it with the first export (correlation of levels and of month-to-month
+changes) and writes `results/2_data_understanding/tables/05_trends_reexport.csv`.
+
+### EM-DAT export (manual)
+EM-DAT needs a login, so the export is manual. public.emdat.be → register / log in → *Access Data*:
+classification **Natural**, all countries, years **2000 – current year**, download the `.xlsx` into
+`data/raw/disasters/` (exactly one file there). Log it in the manifest right away:
+
+```bash
+python -c "import importlib, pathlib, sys; sys.path.insert(0, 'src'); d = importlib.import_module('00_download'); [d.log_manifest(p.resolve(), d.SOURCES['emdat']['portal_url']) for p in pathlib.Path('data/raw/disasters').glob('*.xlsx')]"
+```
+
+`04b_disasters.py` keeps the subgroups climatological, hydrological, meteorological (`config/sources.yaml`),
+counts each event once per region (ID without the country code), puts deaths and affected into the
+start month and fills months without events with 0. Regions: Germany (`de`), rest of world (`row`) and
+all countries (`global`). An event that hits Germany and other countries is a German event: it counts
+in `de` (German deaths / affected) and in `global`, not in `row`. The licence forbids redistribution: never commit
+the export or share it outside the team.
 
 ### Units of analysis
 | Measure | Unit | Setting |
@@ -123,6 +150,10 @@ Single sentences are too short for stance (many need the previous sentence to be
   The Linke group gap (6 Dec 2023 – 1 Feb 2024) gets the group the MPs joined afterwards (Linke or BSW).
   `config/party_overrides.yaml` covers ministers who are not MPs, state politicians, wrong IDs in
   PoliCorp and the PDS 2002–05. About 50 speeches (civil servants, commissioners) stay without party.
+- Government dates (`config/governments.yaml`) match the Bundestag Datenhandbuch, chapter 6 (checked
+  12 Nov 2026). The Datenhandbuch does not list the SPD–Greens minority phase (7 Nov 2024 – 6 May 2025)
+  as a separate government; we start it with the dismissal of the FDP ministers on 7 Nov 2024 (ch. 6.12).
+  The coalition crisis since July 2026 has not changed the coalition parties (as of 12 Nov 2026).
 - GISTEMP anomalies are relative to 1951–1980; `04_temperature.py` re-baselines both series
   to 1991–2020 per calendar month.
 - The climate-change topics ("Klimawandel", "Global warming") are 0 in Germany from 2017 to 2020,
@@ -132,7 +163,14 @@ Single sentences are too short for stance (many need the previous sentence to be
 - One-week spikes: Klimawandel 17–24 Apr 2022 (= 100), Klimaschutz Apr 2023 (= 100). Kept in the data;
   check results with and without these months.
 - `B_topic_hitzewelle` is dominated by summer 2026 (= 100); values before 2018 are mostly 0–3.
+- Google samples the data: a second export of Klimawandel on another day correlates with the first at
+  r = 0.998 (levels) and r = 0.997 (month-to-month changes), at most 2 index points apart
+  (273 months, `results/2_data_understanding/tables/05_trends_reexport.csv`). Sampling noise is negligible.
 - Google changed its data collection on 1 Jan 2011, 2016, 2017 and 2022 (marked "Hinweis" in Trends).
+- EM-DAT heatwave deaths: missing for Germany before 2022, then 2–3 times the RKI estimates, and entered
+  13–16 months late (the 2026 heatwave is missing). Use the RKI series for German heat deaths (#26);
+  event counts rise only mildly (about +8 % from 2004–2014 to 2015–2025).
+- EM-DAT adds events late: the last months of the export (2026) are incomplete.
 
 ## Setup
 ```bash

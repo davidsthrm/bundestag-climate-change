@@ -8,8 +8,9 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
 
 ## General
 - Period: 2004-01 to 2026-09, monthly, 273 months (`start_date`, `end_date` in `config/settings.yaml`).
-- `data/raw/MANIFEST.csv`: one row per downloaded file, 126 rows; columns `file`, `url`,
-  `accessed_utc`, `bytes`, `sha256`. Written by `src/00_download.py`.
+- `data/raw/MANIFEST.csv`: one row per downloaded file, 127 rows (incl. the EM-DAT export);
+  columns `file`, `url`, `accessed_utc`, `bytes`, `sha256`. Written by `src/00_download.py`
+  (manual exports: command in the README).
 - Month key in all processed files: `month` as `YYYY-MM`.
 
 ## Speeches, 15th–20th Bundestag (PoliCorp-GermaParl2-PLUS)
@@ -50,7 +51,8 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
 - Party = parliamentary group on the speech date; rules and exceptions (CDU/CSU merged, Linke
   group gap, overrides, ~50 speeches without party): [README.md, "Known caveats"](../../README.md#known-caveats).
 - `party_in_government`: party is a coalition party on the speech date (`config/governments.yaml`);
-  government dates before Nov 2024 still to verify (#4).
+  dates checked against the Bundestag Datenhandbuch, chapter 6, on 12 Nov 2026 (#4); the minority
+  phase from 7 Nov 2024 is not a separate cabinet there but follows from the FDP dismissals (ch. 6.12).
 - Months without sittings (e.g. August recess) have no sentences, so no attention value.
 
 ## Temperature
@@ -69,7 +71,8 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   (steps in the README).
 - Raw: `data/raw/trends/*.csv`: `A_term_klimawandel.csv`, `B_topic_klimaschutz.csv`,
   `B_topic_hitzewelle.csv`, `B_topic_klima.csv`; two columns `Time`, `<term>`, monthly,
-  values 0..100.
+  values 0..100. `data/raw/trends/check/A_term_klimawandel_2.csv`: second export of the main series
+  on another day, same settings; not merged, only compared (#4).
 - Processed: `data/processed/trends_monthly.csv`, written by `src/05_trends.py`: 1092 rows
   (4 terms × 273 months), 2004-01..2026-09; columns `month`, `term`, `index`, `file`.
 - Terms: Klimawandel (main series, file `A_term_klimawandel.csv`), Klima, Klimaschutz, Hitzewelle
@@ -81,15 +84,47 @@ Columns below were read from the real files on 11 Nov 2026, unless marked otherw
   - One-week spikes: Klimawandel Apr 2022 (= 100), Klimaschutz Apr 2023 (= 100); kept in the
     data, check results with and without these months.
   - Hitzewelle is dominated by summer 2026; values before 2018 are mostly 0–3.
-  - Google samples the data and changed its collection on 1 Jan 2011, 2016, 2017 and 2022;
-    second export of the main series for a correlation check is open (#4).
+  - Google samples the data and changed its collection on 1 Jan 2011, 2016, 2017 and 2022.
+    Second export of the main series vs. the first: r = 0.998 (levels), r = 0.997 (month-to-month
+    changes), max. difference 2 index points, 273 months (`results/2_data_understanding/tables/05_trends_reexport.csv`, #4).
 
-## Disasters (EM-DAT), planned
-- Not in the repo yet: #17 (`src/04b_disasters.py`).
-- Planned: manual export (login needed) into `data/raw/disasters/`; processed
-  `data/processed/disasters_monthly.csv`, monthly, Germany and rest of world.
-- Subgroups climatological, hydrological, meteorological; no geophysical events.
-- Licence does not allow redistribution.
+## Disasters (EM-DAT)
+- Origin: EM-DAT (CRED, UCLouvain), public.emdat.be, free for academic use after registration;
+  licence does not allow redistribution. Manual export (login), steps in the README.
+- Raw: `data/raw/disasters/public_emdat_custom_request.xlsx` (one file), sheets `EM-DAT Data`
+  (10,949 rows, 47 columns) and `EM-DAT Info`. Export settings: classification Natural, all countries,
+  start years 2000–2026. One row per event and country; `DisNo.` = `YYYY-NNNN-ISO`.
+  Columns used: `DisNo.`, `Disaster Subgroup`, `ISO`, `Start Year`, `Start Month`, `Total Deaths`,
+  `Total Affected`.
+- Processed: `data/processed/disasters_monthly.csv`, written by `src/04b_disasters.py`: 273 rows,
+  2004-01..2026-09; columns `month` and `events_*`, `deaths_*`, `affected_*` for `de` (Germany,
+  ISO DEU), `row` (rest of world: events that did not hit Germany) and `global` (all countries);
+  months without events = 0.
+- Rules (#17): subgroups climatological, hydrological, meteorological (`config/sources.yaml`);
+  events counted once per region by `DisNo.` without the country code; deaths and affected summed
+  over rows; everything in the start month; blank deaths / affected = 0; events without start month
+  dropped (45 rows with start year 2004–2026, 10 deaths).
+- Caveats:
+  - Germany: 55 events in 50 of 273 months; 47 of them also hit other countries (mostly European storms,
+    floods, heatwaves). They are German events: in `de` with the German deaths / affected; their rows
+    for the other countries (182,105 deaths, 2.3 M affected) count only in `global`, not in `row` (#17,
+    PR #24). So deaths / affected of `de` + `row` are lower than `global`; events add up except in
+    18 months where a German event starts in another month elsewhere.
+  - Because the large European heatwaves 2022–2024 also hit Germany, `deaths_row` 2022–2024 is
+    13–25 k per year, while `deaths_global` is 72–79 k.
+  - 107 events start in different months in different countries and count in each of those months.
+  - Heatwave deaths are not a usable German heat signal. EM-DAT enters European heatwaves a median
+    of 13–16 months after they start (2022–2025), with deaths from later excess-mortality studies.
+    The 2026 heatwave is not in the export (12 Nov 2026). Before 2022, German heatwave deaths are
+    almost missing (2018: none, 2019: 4; RKI estimates 9,000 and 7,400), and from 2022 they are
+    2–3 times the RKI estimates (DE: 8,173 in 2022-05, 6,376 in 2023-07, 6,282 in 2024-06, 2,445 in
+    2025-07). German heat deaths come from the RKI instead (#26).
+  - Event counts: 227–334 events per year worldwide (2004–2025), about +8 % from 2004–2014
+    (mean 260.5) to 2015–2025 (mean 281.6): a mild rise, no strong reporting trend.
+  - Late reporting: 2026 has ~15 events per month worldwide vs. ~24–25 in 2023–2025, so the
+    last months are incomplete.
+  - Some events have a start month after the export date (2026-11, 2026-12); outside the window.
+  - Per-year counts (unique events per year): `results/3_data_preparation/tables/04b_disasters_per_year.csv`.
 
 ## Climate-relevant sentences
 - File: `data/interim/sentences_relevant.parquet`, written by `src/02_relevance.py` (#5).
