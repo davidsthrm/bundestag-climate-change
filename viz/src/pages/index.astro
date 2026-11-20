@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import data from "../data/viz.json";
+import { DETRENDED } from "../scripts/charts.js";
 
 const { meta } = data;
 const int = (x: number | null) => (x == null ? "–" : Math.round(x).toLocaleString("en-US"));
@@ -49,7 +50,7 @@ const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
       </div>
 
       <nav class="toc">
-        <a href="#h1">H1 signals</a><a href="#indexed">H1 indexed</a><a href="#trends">H1 Google Trends</a>
+        <a href="#h1">H1 signals</a><a href="#indexed">H1 indexed</a><a href="#detrended">H1 detrended</a><a href="#trends">H1 Google Trends</a>
         <a href="#h2">H2 Germany vs world</a><a href="#h3">H3 parties</a><a href="#units">Stance units</a>
         <a href="#corpus">Corpus and join</a><a href="#top">Top months</a><a href="#notes">Notes</a>
       </nav>
@@ -79,6 +80,18 @@ const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
           </div>
           <div class="chart" id="chart-indexed"></div>
         </div>
+      </section>
+
+      <section id="detrended">
+        <h2>H1: detrended and deseasonalized</h2>
+        <p class="sub">
+          What the H1 test looks at: each monthly series minus a linear trend and its calendar-month means, as z-scores on
+          one axis (±4 SD). Shared rises are gone, so what remains is month-to-month co-movement. Display only: #12 fixes
+          the actual method. Months without sittings stay empty.
+        </p>
+        {DETRENDED.map((s) => (
+          <div class="card"><h3>{s.label}</h3><div class="chart" id={`chart-detr-${s.key}`}></div></div>
+        ))}
       </section>
 
       <section id="trends">
@@ -117,6 +130,23 @@ const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
           <div class="chart" id="chart-events-de"></div>
         </div>
         <div class="card"><h3>Disasters in the rest of the world (EM-DAT)</h3><div class="chart" id="chart-events-row"></div></div>
+        <div class="card">
+          <h3>Attention (a) and months with a German disaster</h3>
+          <p class="sub">Bars: share of climate-relevant sentences. Vertical lines: months with at least one German EM-DAT event (from the data, not hand-picked).</p>
+          <div class="chart" id="chart-events-attention"></div>
+        </div>
+        <div class="card table-wrap">
+          <h3>Attention (a) around each German event month</h3>
+          <table>
+            <thead><tr><th>Month</th><th>events</th><th>deaths</th><th>t−1</th><th>t</th><th>t+1</th><th>t+2</th></tr></thead>
+            <tbody>
+              {data.events_de.map((d) => (
+                <tr><td>{d.month}</td><td>{d.events_de}</td><td>{int(d.deaths_de)}</td><td>{pct(d["share_a_t-1"])}</td><td>{pct(d["share_a_t+0"])}</td><td>{pct(d["share_a_t+1"])}</td><td>{pct(d["share_a_t+2"])}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <p class="sub">Mean over all months with sittings: {pct(data.events_de[0]?.share_a_mean_all ?? null)}. Empty: no sittings in that month.</p>
+        </div>
         {meta.has_heat && (
           <div class="card"><h3>Heat-related deaths in Germany (RKI, from 2016)</h3><div class="chart" id="chart-heat"></div></div>
         )}

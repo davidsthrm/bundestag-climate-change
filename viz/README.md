@@ -15,8 +15,8 @@ npm run dev                           # http://localhost:4321
 ```
 
 Views, by hypothesis: H1 signals (attention a and b, Trends, global temperature, global
-disasters), H1 indexed overlay, all four Trends exports with the topic break and spike months,
-H2 Germany vs world (temperature, disasters, RKI heat deaths if present), H3 parties and
+disasters), H1 indexed overlay, H1 detrended and deseasonalized (display only; #12 fixes the method), all four Trends exports with the topic break and spike months,
+H2 Germany vs world (temperature, disasters, attention around German disaster months, RKI heat deaths if present), H3 parties and
 government vs opposition, stance units per party (monthly vs quarterly), corpus and join.
 
 `viz/src/data/viz.json` is derived data and not committed.

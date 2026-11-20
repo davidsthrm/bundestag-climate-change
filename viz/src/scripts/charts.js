@@ -26,6 +26,15 @@ const SIGNALS = [
   { key: "events_global_12m", label: "Disasters global", color: "--series-3" },
 ];
 
+// H1, as #12 sees them: linear trend and calendar-month means removed (07_data_understanding.detrend)
+export const DETRENDED = [
+  { key: "share_a", label: "Bundestag (a) climate share", color: "--series-1" },
+  { key: "share_b", label: "Bundestag (b) main topic", color: "--series-1" },
+  { key: "trends_Klimawandel", label: "Trends: Klimawandel", color: "--series-2" },
+  { key: "anomaly_global", label: "Temperature global", color: "--series-4" },
+  { key: "events_global", label: "Disasters global", color: "--series-3" },
+];
+
 export function render(data) {
   const c = {
     primary: css("--text-primary"), secondary: css("--text-secondary"), muted: css("--text-muted"),
@@ -107,6 +116,29 @@ export function render(data) {
       color: { domain: SIGNALS.map((s) => s.label), range: SIGNALS.map((s) => css(s.color)) },
     });
   });
+
+  // ---------------------------------------------------------------- H1: detrended and deseasonalized
+  for (const s of DETRENDED) {
+    const key = `${s.key}_detr_z`;
+    draw(`chart-detr-${s.key}`, (w) => time(w, 130, { label: null, ticks: 3, domain: [-4, 4] }, [
+      Plot.ruleY([0], { stroke: c.baseline }),
+      Plot.lineY(M, { x: "date", y: key, stroke: css(s.color), strokeWidth: 1.5 }),
+      ...crosshair(M, (d) => (d[key] == null ? `${d.month}\nno value` : `${d.month}\n${s.label}: ${fmt(d[key], 2)} SD`), key),
+    ], { marginTop: 8 }));
+  }
+
+  // ---------------------------------------------------------------- H2: German events on attention
+  const EV = M.filter((d) => d.events_de > 0);
+  draw("chart-events-attention", (w) => time(w, 240, pctAxis, [
+    Plot.ruleX(EV, { x: "date", stroke: c.primary, strokeOpacity: 0.35, strokeWidth: 1 }),
+    Plot.rectY(M, { x: "date", y: "aPct", interval: "month", fill: c.s1, fillOpacity: 0.45, inset: 0.3 }),
+    Plot.ruleY([0], { stroke: c.baseline }),
+    ...crosshair(M, (d) => [
+      d.month,
+      d.sitting ? `(a) ${fmt(d.aPct, 2, " %")} of sentences` : "no plenary sitting",
+      d.events_de > 0 ? `German event(s): ${d.events_de}, ${int(d.deaths_de)} deaths` : null,
+    ].filter(Boolean).join("\n"), "aPct"),
+  ]));
 
   // ---------------------------------------------------------------- H1: Google Trends, all exports
   const brk = [{ date: toDate(data.meta.trends_break) }];

@@ -12,7 +12,8 @@ Output: results/2_data_understanding/tables/07_*.csv   (read by the viz app via 
 
 Tables
   07_profile         rows, columns, months per input file
-  07_monthly         all series on one monthly axis (the join), incl. 12-month rolling means
+  07_monthly         all series on one monthly axis (the join), incl. 12-month rolling means and
+                     detrended z-scores (*_detr_z, see detrend())
   07_missing         months without a value per series
   07_corpus_lp       speeches, sentences, speech length per legislative period
   07_corpus_party    speeches, sentences, relevant sentences, main-topic speeches per party
@@ -20,6 +21,7 @@ Tables
   07_gov_year        climate share government vs. opposition per year (H3, descriptive)
   07_stance_units    relevant sentences per party-month and party-quarter (H1b/H3: monthly or quarterly?)
   07_trends_spikes   per Trends term the 3 months with the largest jump over their neighbours
+  07_events_de       months with a German EM-DAT event and attention (a) from 1 month before to 2 after (H2)
   07_summary         key numbers for results/2_data_understanding/README.md
 
 python src/07_data_understanding.py
@@ -50,6 +52,7 @@ HEAT = PROCESSED / "heat_mortality_monthly.csv"
 SENT_COLS = ["speech_id", "month", "lp", "party", "party_in_government"]
 REL_COLS = ["relevant", "sceptic", "main_topic"]
 ROLL = 12  # months in the rolling mean (display only)
+DETREND = ["share_a", "share_b", "trends_Klimawandel", "anomaly_global", "events_global"]
 
 # colours of the viz app (viz/src/styles/global.css, light theme), so paper and app match
 INK, MUTED, GRID = "#0b0b0b", "#898781", "#e1e0d9"
@@ -96,11 +99,36 @@ def monthly(sent: pd.DataFrame, has_rel: bool, temp, dis, trends, heat) -> pd.Da
         s = df[["relevant", "sentences", "main_topic", "speeches"]].fillna(0).rolling(ROLL, min_periods=ROLL // 2).sum()
         df["share_a_12m"] = s["relevant"] / s["sentences"].replace(0, np.nan)
         df["share_b_12m"] = s["main_topic"] / s["speeches"].replace(0, np.nan)
-    return df.reset_index()
+    return detrend(df.reset_index())
+
+
+def detrend(df: pd.DataFrame) -> pd.DataFrame:
+    """Display only, NOT the method of #12: residuals of a linear trend + calendar-month dummies,
+    as z-scores. Months without a value (no sittings) are left out of the fit and stay empty."""
+    t = np.arange(len(df))
+    dummies = pd.get_dummies(pd.to_datetime(df["month"]).dt.month, drop_first=True).to_numpy(float)
+    X = np.column_stack([np.ones(len(df)), t, dummies])
+    for c in [c for c in DETREND if c in df]:
+        y = df[c].to_numpy(float)
+        ok = ~np.isnan(y)
+        beta, *_ = np.linalg.lstsq(X[ok], y[ok], rcond=None)
+        resid = np.where(ok, y - X @ beta, np.nan)
+        df[f"{c}_detr_z"] = resid / np.nanstd(resid)
+    return df
+
+
+def events_de(df: pd.DataFrame) -> pd.DataFrame:
+    """Months with a German disaster and attention (a) around them; descriptive event view for H2."""
+    out = df.loc[df["events_de"] > 0, ["month", "events_de", "deaths_de"]].copy()
+    if "share_a" in df:
+        for k in (-1, 0, 1, 2):
+            out[f"share_a_t{k:+d}"] = df["share_a"].shift(-k).loc[out.index].round(5)
+        out["share_a_mean_all"] = round(df["share_a"].mean(), 5)
+    return out
 
 
 def missing(df: pd.DataFrame) -> pd.DataFrame:
-    cols = [c for c in df.columns if c not in ("month", "sitting") and not c.endswith("_12m")]
+    cols = [c for c in df.columns if c not in ("month", "sitting") and not c.endswith(("_12m", "_detr_z"))]
     return pd.DataFrame([{"series": c, "months": len(df), "missing": int(df[c].isna().sum()),
                           "first_month": df.loc[df[c].notna(), "month"].min(),
                           "last_month": df.loc[df[c].notna(), "month"].max()} for c in cols])
@@ -273,7 +301,7 @@ def main() -> None:
     lp = corpus_lp(sent)
     tables = {"07_profile": profile(files), "07_monthly": df, "07_missing": missing(df),
               "07_corpus_lp": lp, "07_corpus_party": corpus_party(sent, has_rel),
-              "07_trends_spikes": trends_spikes(df)}
+              "07_trends_spikes": trends_spikes(df), "07_events_de": events_de(df)}
     if has_rel:
         sent["year"] = sent["month"].str[:4].astype(int)
         gov = sent.dropna(subset=["party_in_government"]).assign(
