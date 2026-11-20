@@ -160,3 +160,21 @@ details.card > summary { cursor: pointer; color: var(--text-secondary); font-siz
 details.card[open] > summary { margin-bottom: 8px; }
 details.card table + table { margin-top: 20px; }
 .chart-error { color: var(--div-warm); font-size: 0.85rem; }
+h2.part { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 64px 0 -24px; padding-top: 16px; border-top: 1px solid var(--border); }
+nav.toc strong { color: var(--text-muted); font-weight: 600; }
+details.more > summary { font-weight: 500; }
+details.more h3 { margin-top: 16px; }
+.stripe-label { margin: 8px 0 2px; font-size: 0.85rem; color: var(--text-secondary); }
+.chart.chart-thin { min-height: 60px; }
+button.dl {
+  float: right; position: relative; z-index: 1; margin: 0 0 -24px 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+  border-radius: 6px; padding: 1px 8px; font: inherit; font-size: 0.72rem; cursor: pointer; opacity: 0.6;
+}
+button.dl:hover { opacity: 1; color: var(--text-primary); }
+@media print { button.dl, button.theme { display: none; } }
+
+.story { margin-top: 28px; border-left: 3px solid var(--series-1); }
+.story ol { margin: 8px 0 8px; padding-left: 22px; display: grid; gap: 6px; }
+.story li { color: var(--text-secondary); font-size: 0.93rem; }
+.story li a { color: var(--text-primary); text-decoration: none; margin-right: 4px; }
+.story li a:hover { text-decoration: underline; }

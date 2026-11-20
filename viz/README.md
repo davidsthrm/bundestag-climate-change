@@ -14,11 +14,12 @@ npm install
 npm run dev                           # http://localhost:4321
 ```
 
-Each section opens with a one-line takeaway computed from the tables, then charts; the full tables
-are folded away under "Show ...". Sections: H1 signals, indexed, detrended (display only; #12 fixes
-the method), Google Trends exports; H2 Germany vs world and attention around German disaster months
-(event study); H3 who speaks vs who speaks about climate, parties, government vs opposition; stance
-units per party; corpus and join (coverage of every series). EM-DAT months after `complete_until`
-(`config/sources.yaml`) are shaded as incomplete.
+Layout for storytelling: "The story in one minute" at the top collects the one-line takeaway of
+every section (computed from the tables). Part A shows each source on its own (speeches, attention,
+Google Trends, temperature incl. warming stripes, EM-DAT disasters, RKI heat deaths); Part B shows
+the join and the hypotheses (H1 overlay, detrended series, lag correlations; H2 event study; H3
+party heatmap, who speaks about climate; stance units). Each section has one main chart; more
+charts and tables are folded under "More charts". Every chart has a PNG button (2x, with its title)
+for slides. EM-DAT months after `complete_until` (`config/sources.yaml`) are shaded as incomplete.
 
 `viz/src/data/viz.json` is derived data and not committed.

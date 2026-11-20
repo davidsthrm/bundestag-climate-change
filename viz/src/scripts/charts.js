@@ -77,7 +77,7 @@ export function render(data) {
   };
   const time = (width, height, y, marks, extra = {}) =>
     Plot.plot({
-      width, height, style, marginLeft: 48, marginRight: 16, marginTop: 16,
+      width, height, style, marginLeft: 48, marginRight: 16, marginTop: 26,
       x: { domain: xDomain, label: null, ticks: width < 500 ? 5 : 10 },
       y: { grid: true, ...y }, marks, ...extra,
     });
@@ -88,7 +88,7 @@ export function render(data) {
   // EM-DAT months after complete_until: late reporting, shaded so the drop is not read as a trend
   const incomplete = [
     Plot.rect([{ x1: nextMonth(complete), x2: nextMonth(last) }], { x1: "x1", x2: "x2", fill: c.muted, fillOpacity: 0.15 }),
-    Plot.text([{ x: nextMonth(complete) }], { x: "x", text: () => "incomplete", frameAnchor: "top", dy: -12, textAnchor: "start", fill: c.muted }),
+    Plot.text([{ x: nextMonth(complete) }], { x: "x", text: () => "EM-DAT incomplete", frameAnchor: "top", dy: -12, textAnchor: "start", fill: c.muted }),
   ];
   // monthly values as faint bars, rolling mean as solid line
   const barsLine = (id, y, y12, color, yOpt, title, { height = 200, extra = [] } = {}) =>
@@ -111,7 +111,8 @@ export function render(data) {
     Plot.lineY(M, { x: "date", y: "a12", stroke: c.s1, strokeWidth: 2 }),
     Plot.ruleY([0], { stroke: c.baseline }),
     Plot.dot(top, { x: (d) => new Date(+d.date + 15 * 864e5), y: "aPct", r: 3.5, fill: c.s1, stroke: c.surface, strokeWidth: 2 }),
-    Plot.text(top, { x: (d) => new Date(+d.date + 15 * 864e5), y: "aPct", text: "month", dy: -10, fill: c.primary, fontWeight: 600 }),
+    // narrow screens: only the top label, so they do not collide
+    Plot.text(top.slice(0, w >= 640 ? 5 : 1), { x: (d) => new Date(+d.date + 15 * 864e5), y: "aPct", text: "month", dy: -10, fill: c.primary, fontWeight: 600 }),
     ...crosshair(M, (d) => d.sitting
       ? `${d.month}\n(a) ${fmt(d.aPct, 2, " %")} of sentences\n12-month ${fmt(d.a12, 2, " %")}\n${int(d.relevant)} of ${int(d.sentences)} sentences`
       : noSitting(d), "aPct"),
@@ -299,9 +300,11 @@ export function render(data) {
     party: p, m: U.find((d) => d.party === p && d.grain === "month")?.median,
     q: U.find((d) => d.party === p && d.grain === "quarter")?.median,
   }));
+  const uMax = Math.max(1, ...uWide.map((d) => d.q ?? 0)) * 1.6;
+  const uMin = Math.max(0, Math.min(...uWide.map((d) => d.m ?? 0)) / 1.6);
   draw("chart-units", (w) => Plot.plot({
     width: w, height: uOrder.length * 34 + 70, style, marginLeft: 80, marginRight: 40, marginBottom: 44,
-    x: { type: "symlog", ticks: [0, 1, 2, 5, 10, 20, 50, 100, 200, 500].filter((t) => t <= Math.max(...uWide.map((d) => d.q ?? 0)) * 1.5),
+    x: { type: "symlog", domain: [uMin, uMax], ticks: [0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].filter((t) => t >= uMin && t <= uMax),
       tickFormat: "d", label: "median climate-relevant sentences per period (log scale)", labelAnchor: "center", labelOffset: 36, grid: true },
     y: { domain: uOrder, label: null },
     color: { domain: ["per month", "per quarter"], range: [c.s1, c.s2] },
@@ -309,8 +312,8 @@ export function render(data) {
       Plot.ruleY(uWide, { y: "party", x1: "m", x2: "q", stroke: c.baseline, strokeWidth: 2 }),
       Plot.dot(uWide, { y: "party", x: "m", r: 6, fill: c.s1, stroke: c.surface, strokeWidth: 2 }),
       Plot.dot(uWide, { y: "party", x: "q", r: 6, fill: c.s2, stroke: c.surface, strokeWidth: 2 }),
-      Plot.text(uWide, { y: "party", x: "m", text: (d) => fmt(d.m, 0), dx: -12, textAnchor: "end", fill: c.secondary }),
-      Plot.text(uWide, { y: "party", x: "q", text: (d) => fmt(d.q, 0), dx: 12, textAnchor: "start", fill: c.secondary }),
+      Plot.text(uWide, { y: "party", x: "m", text: (d) => fmt(d.m, 0), dy: -13, fill: c.secondary }),
+      Plot.text(uWide, { y: "party", x: "q", text: (d) => fmt(d.q, 0), dy: -13, fill: c.secondary }),
       Plot.tip(U, Plot.pointer({ y: "party", x: "median", fontSize: 12,
         title: (d) => `${d.party} per ${d.grain}\nmedian ${fmt(d.median, 0)}, p10 ${fmt(d.p10, 0)}\n${d.zero} of ${d.periods} ${d.grain}s with 0` })),
     ],
@@ -353,7 +356,7 @@ export function render(data) {
   draw("chart-lp", (w) => Plot.plot({
     width: w, height: 240, style, marginLeft: 44, marginTop: 20, marginBottom: 44,
     x: { label: "legislative period (Bundestag)", domain: LPr.map((d) => d.label), labelAnchor: "center", labelOffset: 36 },
-    y: { label: "sentences per speech", grid: true },
+    y: { label: null, grid: true },
     marks: [
       Plot.barY(LPr, { x: "label", y: "mean_sentences_per_speech", fill: c.muted, rx: 4, insetLeft: 8, insetRight: 8 }),
       Plot.dot(LPr, { x: "label", y: "median_sentences_per_speech", r: 4, fill: c.primary }),
@@ -381,8 +384,117 @@ export function render(data) {
   draw("chart-volume", (w) => time(w, 230, { label: null, tickFormat: "s" }, [
     Plot.rectY(M, { x: "date", y: "sentences", interval: "month", fill: c.muted, fillOpacity: 0.6, inset: 0.3 }),
     Plot.ruleX(LP.slice(1), { x: "date", stroke: c.secondary, strokeDasharray: "3,3" }),
-    Plot.text(LP.slice(1), { x: "date", text: (d) => `LP ${d.lp}`, frameAnchor: "top", dx: 4, dy: -14, textAnchor: "start", fill: c.secondary }),
+    Plot.text(LP.slice(1), { x: "date", text: (d) => (w >= 640 ? `LP ${d.lp}` : `${d.lp}`), frameAnchor: "top", dx: 4, dy: -14, textAnchor: "start", fill: c.secondary }),
     Plot.ruleY([0], { stroke: c.baseline }),
     ...crosshair(M, (d) => (d.sitting ? `${d.month}\n${int(d.sentences)} sentences\n${int(d.speeches)} speeches` : noSitting(d)), "sentences"),
   ], { marginTop: 28 }));
+
+  // ================================================================ per source, yearly
+  const Y = data.yearly;
+  const yearAxis = (w) => ({ type: "band", label: null, tickFormat: (y) => (y % (w < 600 ? 5 : 2) ? "" : String(y)), tickSize: 0 });
+  const stripes = (id, key, label) => {
+    const v = Y.map((d) => Math.abs(d[key] ?? 0));
+    const m = Math.max(...v, 0.1);
+    draw(id, (w) => Plot.plot({
+      width: w, height: 90, style, marginLeft: 8, marginRight: 8, marginBottom: 24, x: yearAxis(w), y: { axis: null },
+      color: { type: "linear", domain: [-m, 0, m], range: [c.cool, css("--div-mid"), c.warm] },
+      marks: [
+        Plot.cell(Y, { x: "year", fill: key, inset: 0 }),
+        Plot.tip(Y, Plot.pointerX({ x: "year", fontSize: 12, title: (d) => `${d.year}\n${label}: ${fmt(d[key], 2, " °C")} vs 1991–2020` })),
+      ],
+    }));
+  };
+  stripes("chart-stripes-de", "anomaly_de", "Germany");
+  stripes("chart-stripes-global", "anomaly_global", "global");
+
+  const yearBars = (id, key, color, label, { height = 200, fmtV = int, faded = (d) => !d.emdat_complete, yFmt } = {}) =>
+    draw(id, (w) => Plot.plot({
+      width: w, height, style, marginLeft: 48, marginTop: 20, x: yearAxis(w), y: { label: null, grid: true, tickFormat: yFmt },
+      marks: [
+        Plot.barY(Y.filter((d) => d[key] != null), { x: "year", y: key, fill: color, fillOpacity: (d) => (faded(d) ? 0.35 : 0.9), rx: 2, insetLeft: 1, insetRight: 1 }),
+        Plot.ruleY([0], { stroke: c.baseline }),
+        Plot.tip(Y, Plot.pointerX({ x: "year", y: key, fontSize: 12,
+          title: (d) => `${d.year}\n${label}: ${fmtV(d[key])}${faded(d) ? "\nincomplete (late reporting)" : ""}` })),
+      ],
+    }));
+  yearBars("chart-dis-year", "events_global", c.s3, "events worldwide");
+  yearBars("chart-dis-year-de", "events_de", c.primary, "events in Germany", { height: 140 });
+  yearBars("chart-deaths-year", "deaths_global", c.s3, "deaths worldwide");
+  yearBars("chart-heat-year", "heat_deaths_de", c.warm, "heat-related deaths in Germany", { faded: () => false });
+  yearBars("chart-attention-year", "share_a", c.s1, "climate share (a)", { fmtV: (x) => fmt(pct(x), 2, " %"), faded: () => false, yFmt: (d) => `${(d * 100).toFixed(1)} %` });
+
+  // ---------------------------------------------------------------- seasonality of attention
+  const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const S = data.seasonality.map((d) => ({ ...d, mon: MON[d.cal_month - 1], aPct: pct(d.share_a) }));
+  draw("chart-season", (w) => Plot.plot({
+    width: w, height: 220, style, marginLeft: 44, marginTop: 20,
+    x: { domain: MON, label: null }, y: { label: null, grid: true, tickFormat: (d) => d + " %" },
+    marks: [
+      Plot.barY(S.filter((d) => d.aPct != null), { x: "mon", y: "aPct", fill: c.s1, rx: 3, insetLeft: 4, insetRight: 4 }),
+      Plot.ruleY([0], { stroke: c.baseline }),
+      Plot.tip(S, Plot.pointerX({ x: "mon", y: "aPct", fontSize: 12,
+        title: (d) => (d.aPct == null ? `${d.mon}: no sittings` : `${d.mon}: ${fmt(d.aPct, 2, " %")} of sentences on average`) })),
+    ],
+  }));
+
+  // ---------------------------------------------------------------- who moves first: lagged correlation
+  const LAG_SIG = [
+    ["trends_Klimawandel", "Trends", c.s2], ["anomaly_global", "temperature global", c.s4],
+    ["events_global", "disasters global", c.s3], ["anomaly_de", "temperature DE", c.primary], ["events_de", "disasters DE", c.muted],
+  ];
+  const L = data.lag_corr.map((d) => ({ ...d, label: LAG_SIG.find(([k]) => k === d.signal)?.[1] }));
+  draw("chart-lag", (w) => {
+    const labels = w >= 640;
+    return Plot.plot({
+      width: w, height: 300, style, marginLeft: 48, marginRight: labels ? 140 : 16, marginTop: 20, marginBottom: 44,
+      x: { domain: [-6, 6], ticks: 13, label: "lag in months (right: the signal moves first)", labelAnchor: "center", labelOffset: 36 },
+      y: { label: "correlation r", grid: true },
+      color: { domain: LAG_SIG.map(([, l]) => l), range: LAG_SIG.map(([, , col]) => col) },
+      marks: [
+        Plot.ruleX([0], { stroke: c.baseline }), Plot.ruleY([0], { stroke: c.baseline }),
+        Plot.lineY(L, { x: "lag", y: "r", stroke: "label", strokeWidth: 2 }),
+        Plot.dot(L, { x: "lag", y: "r", fill: "label", r: 3, stroke: c.surface, strokeWidth: 1.5 }),
+        labels ? Plot.text(L, Plot.selectLast({ x: "lag", y: "r", z: "label", text: "label", dx: 8, textAnchor: "start", fill: c.secondary })) : null,
+        Plot.tip(L, Plot.pointer({ x: "lag", y: "r", fontSize: 12, title: (d) => `${d.label}, lag ${d.lag}\nr = ${fmt(d.r, 3)} (n = ${d.n})` })),
+      ],
+    });
+  });
+
+  // ---------------------------------------------------------------- parties: heatmap and speaking share over time
+  const PH = data.party_year.filter((d) => PARTIES.includes(d.party) && d.sentences >= MIN_PARTY_YEAR && d.share != null)
+    .map((d) => ({ ...d, sharePct: d.share * 100 }));
+  draw("chart-party-heat", (w) => Plot.plot({
+    width: w, height: PARTIES.length * 30 + 40, style, marginLeft: 80, marginBottom: 24,
+    x: yearAxis(w), y: { domain: PARTIES, label: null },
+    color: { type: "linear", range: [css("--seq-low"), css("--seq-high")], interpolate: "lab", legend: true, label: "% climate sentences", tickFormat: (d) => d.toFixed(1) + " %" },
+    marks: [
+      Plot.cell(PH, { x: "year", y: "party", fill: "sharePct", inset: 1, rx: 2 }),
+      Plot.tip(PH, Plot.pointer({ x: "year", y: "party", fontSize: 12,
+        title: (d) => `${d.party} ${d.year}\n${fmt(d.sharePct, 2, " %")} climate sentences\n${int(d.relevant)} of ${int(d.sentences)}` })),
+    ],
+  }));
+
+  const years = [...new Set(data.party_year.map((d) => d.year))].sort();
+  const share = years.flatMap((year) => {
+    const rows = data.party_year.filter((d) => d.year === year);
+    const total = rows.reduce((a, d) => a + d.sentences, 0);
+    let y = 0;
+    return [...PARTIES, "other"].map((p) => {
+      const n = p === "other" ? rows.filter((d) => !PARTIES.includes(d.party)).reduce((a, d) => a + d.sentences, 0)
+        : rows.find((d) => d.party === p)?.sentences ?? 0;
+      const v = (n / total) * 100;
+      return { year, party: p, share: v, y1: y, y2: (y += v) };
+    });
+  });
+  draw("chart-speak-share", (w) => Plot.plot({
+    width: w, height: 260, style, marginLeft: 44, marginRight: w >= 640 ? 80 : 16, marginTop: 16,
+    x: { label: null, tickFormat: "d" }, y: { label: null, domain: [0, 100], tickFormat: (d) => d + " %" },
+    marks: [
+      Plot.areaY(share, { x: "year", y1: "y1", y2: "y2", z: "party", fill: (d) => partyColor(d.party), fillOpacity: 0.9, curve: "monotone-x" }),
+      w >= 640 ? Plot.text(share.filter((d) => d.year === years.at(-1) && d.share >= 4), { x: "year", y: (d) => (d.y1 + d.y2) / 2,
+        text: "party", dx: 8, textAnchor: "start", fill: c.secondary }) : null,
+      Plot.tip(share, Plot.pointer({ x: "year", y: (d) => (d.y1 + d.y2) / 2, fontSize: 12,
+        title: (d) => `${d.party} ${d.year}\n${fmt(d.share, 1)} % of speech sentences` })),
+    ],
+  }));
 }

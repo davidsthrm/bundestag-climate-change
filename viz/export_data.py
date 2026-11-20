@@ -46,7 +46,8 @@ def main() -> None:
         },
         "monthly": monthly,
         **{name: records(name) for name in ("corpus_lp", "corpus_party", "party_year", "gov_year",
-                                            "stance_units", "trends_spikes", "events_de", "event_study", "missing")},
+                                            "stance_units", "trends_spikes", "events_de", "event_study", "missing",
+                                            "yearly", "seasonality", "lag_corr")},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")

@@ -17,12 +17,15 @@ Tables
   07_missing         months without a value per series
   07_corpus_lp       speeches, sentences, speech length per legislative period
   07_corpus_party    speeches, sentences, relevant sentences, main-topic speeches per party
-  07_party_year      climate share per party and year (H3, descriptive)
   07_gov_year        climate share government vs. opposition per year (H3, descriptive)
   07_stance_units    relevant sentences per party-month and party-quarter (H1b/H3: monthly or quarterly?)
   07_trends_spikes   per Trends term the 3 months with the largest jump over their neighbours
   07_events_de       months with a German EM-DAT event and attention (a) from 1 month before to 2 after (H2)
   07_event_study     mean attention (a) at each offset around German event months vs. the mean of all months
+  07_yearly          every series per year (sums or means), for the per-source views and warming stripes
+  07_seasonality     mean per calendar month (does attention follow the season?)
+  07_lag_corr        correlation of detrended attention (a) with each detrended signal, lags -6..+6 months
+  07_party_year      sentences per party and year (+ climate share if relevance exists)
   07_summary         key numbers for results/2_data_understanding/README.md
 
 python src/07_data_understanding.py
@@ -51,10 +54,12 @@ MONTHS = pd.period_range(START, END, freq="M").strftime("%Y-%m")
 RELEVANT = INTERIM / "sentences_relevant.parquet"
 SENTENCES = INTERIM / "sentences.parquet"
 HEAT = PROCESSED / "heat_mortality_monthly.csv"
+HEAT_YEARLY = PROCESSED / "heat_mortality_yearly.csv"
 SENT_COLS = ["speech_id", "month", "lp", "party", "party_in_government"]
 REL_COLS = ["relevant", "sceptic", "main_topic"]
 ROLL = 12  # months in the rolling mean (display only)
-DETREND = ["share_a", "share_b", "trends_Klimawandel", "anomaly_global", "events_global"]
+DETREND = ["share_a", "share_b", "trends_Klimawandel", "anomaly_global", "events_global", "anomaly_de", "events_de"]
+LAGS = range(-6, 7)  # months; positive lag = the other series moves first
 
 # colours of the viz app (viz/src/styles/global.css, light theme), so paper and app match
 INK, MUTED, GRID = "#0b0b0b", "#898781", "#e1e0d9"
@@ -137,6 +142,49 @@ def event_study(ev: pd.DataFrame) -> pd.DataFrame:
         rows.append({"offset": k, "events": len(v), "mean_share_a": round(v.mean(), 5),
                      "diff_pp": round((v.mean() - ev["share_a_mean_all"].iloc[0]) * 100, 3)})
     return pd.DataFrame(rows)
+
+
+def yearly(df: pd.DataFrame) -> pd.DataFrame:
+    y = df.assign(year=df["month"].str[:4].astype(int)).groupby("year")
+    sums = [c for c in ("sentences", "speeches", "relevant", "main_topic", "heat_deaths_de") if c in df]
+    sums += [c for c in df if c.startswith(("events_", "deaths_")) and not c.endswith(("_12m", "_detr_z"))]
+    means = [c for c in df if c.startswith(("trends_", "anomaly_")) and not c.endswith(("_12m", "_detr_z"))]
+    out = y[sums].sum(min_count=1).join(y[means].mean())
+    if "relevant" in out:  # ratio of sums, so short sitting years are not over-weighted
+        out["share_a"] = out["relevant"] / out["sentences"]
+        out["share_b"] = out["main_topic"] / out["speeches"]
+    out["emdat_complete"] = out.index <= int(EMDAT_COMPLETE[:4])
+    if HEAT_YEARLY.exists():  # yearly RKI / paper values cover 2004-2015 too
+        out["heat_deaths_de"] = pd.read_csv(HEAT_YEARLY).set_index("year")["heat_deaths_de"]
+    return out.round(5).reset_index()
+
+
+def seasonality(df: pd.DataFrame) -> pd.DataFrame:
+    cols = [c for c in ("share_a", "share_b", "sentences", "trends_Klimawandel", "trends_Hitzewelle", "anomaly_de",
+                        "events_global", "events_de", "heat_deaths_de") if c in df]
+    return (df.assign(cal_month=df["month"].str[5:7].astype(int)).groupby("cal_month")[cols].mean()
+            .round(5).reset_index())
+
+
+def lag_corr(df: pd.DataFrame) -> pd.DataFrame:
+    """Descriptive only, not the Granger test of #12: r(attention_t, signal_{t-lag}) on detrended series."""
+    if "share_a_detr_z" not in df:
+        return pd.DataFrame()
+    a = df["share_a_detr_z"]
+    rows = []
+    for sig in ("trends_Klimawandel", "anomaly_global", "events_global", "anomaly_de", "events_de"):
+        x = df[f"{sig}_detr_z"]
+        for lag in LAGS:
+            pair = pd.concat([a, x.shift(lag)], axis=1).dropna()
+            rows.append({"signal": sig, "lag": lag, "r": round(pair.iloc[:, 0].corr(pair.iloc[:, 1]), 4), "n": len(pair)})
+    return pd.DataFrame(rows)
+
+
+def party_year(sent: pd.DataFrame, has_rel: bool) -> pd.DataFrame:
+    s = sent.dropna(subset=["party"]).assign(year=lambda d: d["month"].str[:4].astype(int))
+    if has_rel:
+        return share_by(s, ["party", "year"])
+    return s.groupby(["party", "year"]).size().rename("sentences").reset_index()
 
 
 def missing(df: pd.DataFrame) -> pd.DataFrame:
@@ -323,12 +371,13 @@ def main() -> None:
     lp = corpus_lp(sent)
     tables = {"07_profile": profile(files), "07_monthly": df, "07_missing": missing(df),
               "07_corpus_lp": lp, "07_corpus_party": corpus_party(sent, has_rel),
-              "07_trends_spikes": trends_spikes(df), "07_events_de": events_de(df)}
+              "07_trends_spikes": trends_spikes(df), "07_events_de": events_de(df),
+              "07_yearly": yearly(df), "07_seasonality": seasonality(df), "07_lag_corr": lag_corr(df),
+              "07_party_year": party_year(sent, has_rel)}
     if has_rel:
         sent["year"] = sent["month"].str[:4].astype(int)
         gov = sent.dropna(subset=["party_in_government"]).assign(
             side=lambda d: np.where(d["party_in_government"].astype(bool), "government", "opposition"))
-        tables["07_party_year"] = share_by(sent.dropna(subset=["party"]), ["party", "year"])
         tables["07_gov_year"] = share_by(gov, ["side", "year"])
         tables["07_stance_units"] = stance_units(sent)
         tables["07_event_study"] = event_study(tables["07_events_de"])
