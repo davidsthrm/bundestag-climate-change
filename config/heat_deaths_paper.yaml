@@ -1,0 +1,27 @@
+# RKI yearly heat-related deaths in Germany before the weekly report starts (2016), #26.
+# Source: Winklmayr C, Muthers S, Niemann H, Mücke HG, an der Heiden M. Heat-related mortality in
+# Germany from 1992 to 2021. Dtsch Arztebl Int 2022; 119: 451-7. DOI 10.3238/arztebl.m2022.0202,
+# eTable (point estimate [95 % CI]), copied verbatim from https://pmc.ncbi.nlm.nih.gov/articles/PMC9639227/
+# on 2026-11-12. The page blocks scripted downloads, so the values live here.
+# Earlier model version than the RKI weekly report; 2016-2021 are kept to compare both versions.
+# Used by src/04c_heat_mortality.py.
+
+years:
+  2004: [1300, -800, 3200]
+  2005: [1400, -900, 3600]
+  2006: [7500, 5400, 9500]
+  2007: [500, -1600, 2500]
+  2008: [900, -1100, 3100]
+  2009: [500, -1600, 2400]
+  2010: [4500, 2300, 6300]
+  2011: [100, -1900, 2300]
+  2012: [1000, -1100, 3200]
+  2013: [3000, 1100, 5100]
+  2014: [1000, -1100, 2900]
+  2015: [6000, 3900, 8200]
+  2016: [1800, -600, 4300]
+  2017: [1400, -800, 3400]
+  2018: [8700, 6700, 10900]
+  2019: [6900, 4600, 9300]
+  2020: [3700, 1400, 5600]
+  2021: [1700, -700, 4300]
