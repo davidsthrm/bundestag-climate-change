@@ -33,6 +33,7 @@ export const DETRENDED = [
   { key: "trends_Klimawandel", label: "Trends: Klimawandel", color: "--series-2" },
   { key: "anomaly_global", label: "Temperature global", color: "--series-4" },
   { key: "events_global", label: "Disasters global", color: "--series-3" },
+  { key: "anomaly_de", label: "Temperature Germany", color: "--text-secondary" },
 ];
 const Z_MAX = 4; // detrended charts show ±4 SD; values beyond are clipped and labelled
 // series shown in the join coverage strip, top to bottom
@@ -86,10 +87,7 @@ export function render(data) {
     Plot.tip(rows, Plot.pointerX({ x: "date", y, title, fontSize: 12 })),
   ];
   // EM-DAT months after complete_until: late reporting, shaded so the drop is not read as a trend
-  const incomplete = [
-    Plot.rect([{ x1: nextMonth(complete), x2: nextMonth(last) }], { x1: "x1", x2: "x2", fill: c.muted, fillOpacity: 0.15 }),
-    Plot.text([{ x: nextMonth(complete) }], { x: "x", text: () => "EM-DAT incomplete", frameAnchor: "top", dy: -12, textAnchor: "start", fill: c.muted }),
-  ];
+  const incomplete = []; // EM-DAT after complete_until is cut in 07, nothing to shade
   // monthly values as faint bars, rolling mean as solid line
   const barsLine = (id, y, y12, color, yOpt, title, { height = 200, extra = [] } = {}) =>
     draw(id, (w) => time(w, height, yOpt, [
@@ -158,7 +156,6 @@ export function render(data) {
     const key = `${s.key}_detr_z`;
     const out = M.filter((d) => d[key] != null && Math.abs(d[key]) > Z_MAX);
     draw(`chart-detr-${s.key}`, (w) => time(w, 130, { label: null, ticks: 3, domain: [-Z_MAX, Z_MAX] }, [
-      s.key.startsWith("events") ? incomplete[0] : null,
       Plot.ruleY([0], { stroke: c.baseline }),
       Plot.lineY(M, { x: "date", y: key, stroke: css(s.color), strokeWidth: 1.5, clip: true }),
       Plot.text(out, { x: "date", y: (d) => Math.sign(d[key]) * Z_MAX, text: (d) => `${d.month}: ${fmt(d[key], 1)} SD ↑`,
@@ -250,6 +247,27 @@ export function render(data) {
         title: (d) => `event month ${d.month} (${int(d.deaths)} deaths)\n${OFF[d.k]}: ${fmt(d.diff, 2)} pp vs average` })),
     ],
   }));
+
+  // ---------------------------------------------------------------- H2: heat summers (RKI from 2016)
+  if (data.meta.has_heat) {
+    const H = M.filter((d) => d.month >= "2016-01");
+    const hDomain = [toDate("2016-01"), nextMonth(last)];
+    const heatPanel = (id, y, color, yOpt, title, height = 130) => draw(id, (w) => Plot.plot({
+      width: w, height, style, marginLeft: 56, marginRight: 16, marginTop: 22,
+      x: { domain: hDomain, label: null, ticks: w < 500 ? 5 : 11 }, y: { grid: true, ticks: 3, ...yOpt },
+      marks: [
+        Plot.rectY(H, { x: "date", y, interval: "month", fill: color, inset: 0.5 }),
+        Plot.ruleY([0], { stroke: c.baseline }),
+        ...crosshair(H, title, y),
+      ],
+    }));
+    heatPanel("chart-hs-deaths", "heat_deaths_de", c.warm, { label: "heat deaths" },
+      (d) => `${d.month}\n${int(d.heat_deaths_de)} heat-related deaths`);
+    heatPanel("chart-hs-share", "aPct", c.s1, { label: "% climate", tickFormat: (d) => d + " %" },
+      (d) => (d.sitting ? `${d.month}\n(a) ${fmt(d.aPct, 2, " %")} of sentences` : noSitting(d)));
+    heatPanel("chart-hs-trends", "trends_Hitzewelle", c.s2, { label: "Hitzewelle", domain: [0, 100] },
+      (d) => `${d.month}\nTrends Hitzewelle ${fmt(d.trends_Hitzewelle, 0)}`);
+  }
 
   // ---------------------------------------------------------------- H3: parties
   const MIN_PARTY_YEAR = 2000; // sentences; smaller party-years (e.g. BSW 2024) give noisy shares
@@ -418,7 +436,7 @@ export function render(data) {
       ],
     }));
   yearBars("chart-dis-year", "events_global", c.s3, "events worldwide");
-  yearBars("chart-dis-year-de", "events_de", c.primary, "events in Germany", { height: 140 });
+  yearBars("chart-dis-year-de", "events_de", c.primary, "events in Germany");
   yearBars("chart-deaths-year", "deaths_global", c.s3, "deaths worldwide");
   yearBars("chart-heat-year", "heat_deaths_de", c.warm, "heat-related deaths in Germany", { faded: () => false });
   yearBars("chart-attention-year", "share_a", c.s1, "climate share (a)", { fmtV: (x) => fmt(pct(x), 2, " %"), faded: () => false, yFmt: (d) => `${(d * 100).toFixed(1)} %` });
@@ -444,17 +462,16 @@ export function render(data) {
   ];
   const L = data.lag_corr.map((d) => ({ ...d, label: LAG_SIG.find(([k]) => k === d.signal)?.[1] }));
   draw("chart-lag", (w) => {
-    const labels = w >= 640;
     return Plot.plot({
-      width: w, height: 300, style, marginLeft: 48, marginRight: labels ? 140 : 16, marginTop: 20, marginBottom: 44,
+      width: w, height: 300, style, marginLeft: 48, marginRight: 16, marginTop: 20, marginBottom: 44,
       x: { domain: [-6, 6], ticks: 13, label: "lag in months (right: the signal moves first)", labelAnchor: "center", labelOffset: 36 },
       y: { label: "correlation r", grid: true },
       color: { domain: LAG_SIG.map(([, l]) => l), range: LAG_SIG.map(([, , col]) => col) },
       marks: [
         Plot.ruleX([0], { stroke: c.baseline }), Plot.ruleY([0], { stroke: c.baseline }),
-        Plot.lineY(L, { x: "lag", y: "r", stroke: "label", strokeWidth: 2 }),
+        Plot.lineY(L.filter((d) => !d.signal.endsWith("_de")), { x: "lag", y: "r", stroke: "label", strokeWidth: 2.5 }),
+        Plot.lineY(L.filter((d) => d.signal.endsWith("_de")), { x: "lag", y: "r", stroke: "label", strokeWidth: 1.5, strokeDasharray: "4,3" }),
         Plot.dot(L, { x: "lag", y: "r", fill: "label", r: 3, stroke: c.surface, strokeWidth: 1.5 }),
-        labels ? Plot.text(L, Plot.selectLast({ x: "lag", y: "r", z: "label", text: "label", dx: 8, textAnchor: "start", fill: c.secondary })) : null,
         Plot.tip(L, Plot.pointer({ x: "lag", y: "r", fontSize: 12, title: (d) => `${d.label}, lag ${d.lag}\nr = ${fmt(d.r, 3)} (n = ${d.n})` })),
       ],
     });

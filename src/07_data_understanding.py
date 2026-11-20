@@ -98,6 +98,9 @@ def monthly(sent: pd.DataFrame, has_rel: bool, temp, dis, trends, heat) -> pd.Da
         parts.append(heat.set_index("month")[["heat_deaths_de"]])
     df = pd.concat(parts, axis=1).reindex(MONTHS)
     df.index.name = "month"
+    # EM-DAT reports late: months after complete_until are cut, so they are not read as fewer disasters
+    emdat = [c for c in df if c.startswith(("events_", "deaths_"))]
+    df.loc[df.index > EMDAT_COMPLETE, emdat] = np.nan
 
     roll_cols = ["anomaly_de", "anomaly_global", "events_de", "events_row", "events_global", *tr.columns]
     for c in roll_cols:
@@ -291,14 +294,6 @@ def _panel(ax, x, monthly_vals, rolled, color, title, unit) -> None:
     _axis(ax, title, unit)
 
 
-def _incomplete(ax, df: pd.DataFrame) -> None:
-    """Shade EM-DAT months after complete_until (late reporting)."""
-    start = pd.Period(EMDAT_COMPLETE, freq="M") + 1
-    ax.axvspan(start.to_timestamp(), pd.to_datetime(df["month"].iloc[-1]) + pd.offsets.MonthEnd(),
-               color=MUTED, alpha=0.15, linewidth=0)
-    ax.text(start.to_timestamp(), ax.get_ylim()[1], " incomplete", fontsize=7, color=MUTED, va="top")
-
-
 def fig_h1(df: pd.DataFrame, has_rel: bool, path: Path) -> None:
     x = pd.to_datetime(df["month"])
     fig, axes = plt.subplots(4, 1, figsize=(8, 8.5), sharex=True)
@@ -313,7 +308,6 @@ def fig_h1(df: pd.DataFrame, has_rel: bool, path: Path) -> None:
            "Physical signal: global temperature anomaly (GISTEMP)", "°C vs 1991–2020")
     _panel(axes[3], x, df["events_global"], df["events_global_12m"], DISASTERS,
            "Physical signal: climate-related disasters worldwide (EM-DAT)", "events per month")
-    _incomplete(axes[3], df)
     fig.text(0.01, 0.005, f"Bars: monthly values. Line: {ROLL}-month rolling mean. "
              "Empty Bundestag months: no sittings.", fontsize=7, color=MUTED)
     fig.tight_layout(rect=(0, 0.02, 1, 1))
@@ -334,7 +328,6 @@ def fig_h2(df: pd.DataFrame, path: Path) -> None:
     axes[1].set_yscale("symlog", linthresh=1)
     _axis(axes[1], "Climate-related disasters (EM-DAT): Germany vs. rest of world", "events per month (log)")
     axes[1].legend(frameon=False, fontsize=8)
-    _incomplete(axes[1], df)
     fig.tight_layout()
     fig.savefig(path, dpi=200)
     plt.close(fig)

@@ -168,9 +168,11 @@ details.more h3 { margin-top: 16px; }
 .chart.chart-thin { min-height: 60px; }
 button.dl {
   float: right; position: relative; z-index: 1; margin: 0 0 -24px 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted);
-  border-radius: 6px; padding: 1px 8px; font: inherit; font-size: 0.72rem; cursor: pointer; opacity: 0.6;
+  border-radius: 6px; padding: 1px 8px; font: inherit; font-size: 0.72rem; cursor: pointer; opacity: 0; transition: opacity 0.15s;
 }
+div:hover > button.dl, button.dl:focus-visible { opacity: 0.7; }
 button.dl:hover { opacity: 1; color: var(--text-primary); }
+@media (hover: none) { button.dl { opacity: 0.6; } }
 @media print { button.dl, button.theme { display: none; } }
 
 .story { margin-top: 28px; border-left: 3px solid var(--series-1); }
@@ -178,3 +180,6 @@ button.dl:hover { opacity: 1; color: var(--text-primary); }
 .story li { color: var(--text-secondary); font-size: 0.93rem; }
 .story li a { color: var(--text-primary); text-decoration: none; margin-right: 4px; }
 .story li a:hover { text-decoration: underline; }
+.kicker { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--series-1); margin: 0 0 2px; font-weight: 600; }
+.story .kicker { margin-top: 14px; }
+.story li a { font-weight: 600; }

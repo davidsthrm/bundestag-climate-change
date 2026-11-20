@@ -31,12 +31,18 @@ const complete = Y.filter((d) => d.emdat_complete);
 const firstDec = mean(complete.slice(0, 10).map((d) => d.events_global));
 const lastDec = mean(complete.slice(-10).map((d) => d.events_global));
 const heatMax = meta.has_heat ? maxBy(Y, "heat_deaths_de") : null;
+// heat summers: the 10 months with the most heat deaths, and whether the Bundestag sat in them
+const heatTop = meta.has_heat
+  ? data.monthly.filter((d) => d.heat_deaths_de != null).sort((a, b) => b.heat_deaths_de - a.heat_deaths_de).slice(0, 10) : [];
+const heatSat = heatTop.filter((d) => d.sitting);
+const meanA = mean(data.monthly.filter((d) => d.share_a != null).map((d) => d.share_a));
+const heatDiff = heatSat.length && hasRel ? (mean(heatSat.map((d) => d.share_a)) - meanA) * 100 : null;
 const S = data.seasonality.filter((d) => d.share_a != null);
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const seasonHi = S.length ? maxBy(S, "share_a") : null;
 const seasonLo = S.length ? minBy(S, "share_a") : null;
-const lagTop = data.lag_corr.length
-  ? data.lag_corr.reduce((a, b) => (Math.abs(b.r) > Math.abs(a.r) ? b : a)) : null;
+const lagTop = data.lag_corr.some((d) => d.r > 0)
+  ? data.lag_corr.reduce((a, b) => (b.r > a.r ? b : a)) : null;
 const LAG_NAME: Record<string, string> = {
   trends_Klimawandel: "Google Trends", anomaly_global: "global temperature", events_global: "global disasters",
   anomaly_de: "German temperature", events_de: "German disasters",
@@ -58,6 +64,24 @@ const unitsQ = data.stance_units.filter((d) => d.grain === "quarter" && PARTIES.
 const thinM = unitsM.length ? minBy(unitsM, "median") : null;
 const thinQ = unitsQ.length ? minBy(unitsQ, "median") : null;
 const fullSeries = data.missing.filter((d) => d.missing === 0).length;
+
+// ---- documentary wording: direction words and comparisons, all from the tables
+const trend = (a: number, b: number, up: string, down: string, flat: string, tol = 0.03) =>
+  Math.abs(b - a) <= tol * Math.abs(a || 1) ? flat : b > a ? up : down;
+const lenWord = lps.length > 1 ? trend(lps[0].mean_sentences_per_speech, lps.at(-1).mean_sentences_per_speech,
+  "Speeches got longer", "Speeches got shorter", "Speech length stayed about the same") : "";
+const shareAll = meta.relevant_sentences / meta.sentences;
+const first5 = full.slice(0, 5), last5 = full.slice(-5);
+const tDe0 = mean(first5.map((d) => d.anomaly_de)), tDe1 = mean(last5.map((d) => d.anomaly_de));
+const tGl0 = mean(first5.map((d) => d.anomaly_global)), tGl1 = mean(last5.map((d) => d.anomaly_global));
+const tempWord = tDe1 > tDe0 && tGl1 > tGl0 ? "Meanwhile, it keeps getting warmer" : "Temperatures swing from year to year";
+const disWord = trend(firstDec, lastDec, "rises", "falls", "stays roughly flat", 0.05);
+const months = (n: number) => `${n} month${n > 1 ? "s" : ""}`;
+const lagText = !lagTop ? "" : lagTop.lag > 0
+  ? `${LAG_NAME[lagTop.signal]} first, the Bundestag about ${months(lagTop.lag)} later`
+  : lagTop.lag < 0 ? `the Bundestag first, ${LAG_NAME[lagTop.signal]} about ${months(-lagTop.lag)} later`
+  : `${LAG_NAME[lagTop.signal]} and the Bundestag in the same month`;
+const reactWord = es[0] == null ? "" : Math.abs(es[0].diff_pp) < 0.1 ? "barely moves" : es[0].diff_pp > 0 ? "rises" : "falls";
 ---
 
 <html lang="en">
@@ -106,17 +130,18 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
 
       <aside class="card story" id="story">
         <h3>The story in one minute</h3>
-        <ol id="story-list"></ol>
-        <p class="sub">Collected from the takeaway of each section below; click a line to jump there.</p>
+        <p class="sub">A climate that keeps warming, a public that searches in waves, a parliament that speaks in its own rhythm. Each line is the finding of one chapter below; click to jump there.</p>
+        <div id="story-list"></div>
       </aside>
 
-      <h2 class="part">Part A · Each source on its own</h2>
+      <h2 class="part">Act I–II · Each source on its own</h2>
 
-      <section id="speeches">
+      <section id="speeches" data-act="Act I · The stage">
+        <p class="kicker">Act I · The stage</p>
         <h2>Speeches (PoliCorp + Bundestag XML)</h2>
         <p class="takeaway">
-          {int(meta.speeches)} speeches with {(meta.sentences / 1e6).toFixed(2)} M sentences.
-          {lps.length > 1 && <> Average speech length: {num(lps[0].mean_sentences_per_speech)} sentences in the {lps[0].lp}. Bundestag,
+          From {meta.first_month} to {meta.last_month} the Bundestag held {int(meta.speeches)} speeches, {(meta.sentences / 1e6).toFixed(2)} million sentences.
+          {lps.length > 1 && <> {lenWord}: {num(lps[0].mean_sentences_per_speech)} sentences on average in the {lps[0].lp}. Bundestag,
           {" "}{num(lps.at(-1).mean_sentences_per_speech)} in the {lps.at(-1).lp}.</>}
         </p>
         <div class="card"><h3>Speech sentences per month</h3><p class="sub">Gaps: no sittings. Dashed: new legislative period.</p><div class="chart" id="chart-volume"></div></div>
@@ -136,9 +161,10 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         </details>
       </section>
 
-      <section id="attention">
+      <section id="attention" data-act="Act II · The signals">
+        <p class="kicker">Act II · The signals</p>
         <h2>Climate attention in the Bundestag (step 2)</h2>
-        {topMonths.length > 0 && <p class="takeaway">Strongest months: {topMonths.join(", ")}.</p>}
+        {topMonths.length > 0 && <p class="takeaway">Climate is a niche topic: {pct(shareAll, 1)} of all sentences. It flares up in a few months: {topMonths.join(", ")}.</p>}
         <div class="card"><h3>(a) Share of speech sentences that are climate-relevant</h3><p class="sub">Bars: months. Line: 12-month mean. Labels: top 5 months.</p><div class="chart" id="chart-share-a"></div></div>
         <details class="card more">
           <summary>More charts: main-topic speeches, per year, by calendar month</summary>
@@ -154,12 +180,14 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         </details>
       </section>
 
-      <section id="trends">
+      <section id="trends" data-act="Act II · The signals">
+        <p class="kicker">Act II · The signals</p>
         <h2>Public attention: Google Trends</h2>
         <p class="takeaway">
+          The public searches in waves.
           {spikes.length > 0
-            ? <>One-month spikes: {spikes.map((d, i) => <>{i > 0 && ", "}{d.term} {d.month} (×{num(d.ratio, 0)})</>)}. Results must hold with and without them.</>
-            : "No extreme one-month spikes."}
+            ? <> Some waves are single odd months: {spikes.map((d, i) => <>{i > 0 && ", "}{d.term} {d.month} (×{num(d.ratio, 0)} its neighbours)</>)}; results must hold with and without them.</>
+            : " No single month dominates."}
         </p>
         <div class="card"><h3>Search term “Klimawandel” (main series, DE)</h3><div class="chart" id="chart-trends-main"></div></div>
         <details class="card more">
@@ -183,11 +211,12 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         </details>
       </section>
 
-      <section id="temperature">
+      <section id="temperature" data-act="Act II · The signals">
+        <p class="kicker">Act II · The signals</p>
         <h2>Physical signal: temperature</h2>
         <p class="takeaway">
-          Warmest full year: {warmDe?.year} in Germany ({signed(warmDe?.anomaly_de, 1)} °C), {warmGl?.year} globally
-          {" "}({signed(warmGl?.anomaly_global, 2)} °C), both vs 1991–2020.
+          {tempWord}: Germany {signed(tDe0, 1)} °C in {first5[0]?.year}–{first5.at(-1)?.year}, {signed(tDe1, 1)} °C in
+          {" "}{last5[0]?.year}–{last5.at(-1)?.year}; the globe {signed(tGl0, 2)} → {signed(tGl1, 2)} °C (vs 1991–2020). Warmest year: {warmDe?.year} in Germany, {warmGl?.year} globally.
         </p>
         <div class="card">
           <h3>Warming stripes: yearly anomaly vs 1991–2020</h3>
@@ -205,11 +234,12 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         </details>
       </section>
 
-      <section id="disasters">
+      <section id="disasters" data-act="Act II · The signals">
+        <p class="kicker">Act II · The signals</p>
         <h2>Physical signal: climate-related disasters (EM-DAT)</h2>
         <p class="takeaway">
-          Worldwide {num(firstDec, 0)} events per year in the first ten complete years, {num(lastDec, 0)} in the last ten.
-          Years after {meta.emdat_complete_until.slice(0, 4)} are faded: EM-DAT reports late, so the drop is missing data.
+          The count of recorded disasters {disWord}: {num(firstDec, 0)} per year worldwide in the first ten years, {num(lastDec, 0)} in the last ten.
+          Data end at {meta.emdat_complete_until}, because EM-DAT records events late.
         </p>
         <div class="card"><h3>Events per year, worldwide</h3><div class="chart" id="chart-dis-year"></div></div>
         <details class="card more">
@@ -223,32 +253,31 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
       </section>
 
       {meta.has_heat && (
-        <section id="heat">
+        <section id="heat" data-act="Act II · The signals">
+          <p class="kicker">Act II · The signals</p>
           <h2>Heat-related deaths in Germany (RKI)</h2>
-          {heatMax && <p class="takeaway">Highest year: {heatMax.year} with about {int(heatMax.heat_deaths_de)} heat-related deaths.</p>}
+          {heatMax && <p class="takeaway">The heat has a human cost: in the worst year, {heatMax.year}, about {int(heatMax.heat_deaths_de)} people in Germany died from heat.</p>}
           <div class="card"><h3>Heat-related deaths per year</h3><p class="sub">Before 2016 from Winklmayr et al. 2022, from 2016 the RKI weekly report.</p><div class="chart" id="chart-heat-year"></div></div>
-          <details class="card more">
-            <summary>More charts: per month (from 2016)</summary>
-            <div class="chart" id="chart-heat"></div>
-          </details>
         </section>
       )}
 
-      <h2 class="part">Part B · Joined for the hypotheses</h2>
+      <h2 class="part">Act III · Joined for the hypotheses</h2>
 
-      <section id="join">
+      <section id="join" data-act="Act III · The test">
+        <p class="kicker">Act III · The test</p>
         <h2>The join: one monthly axis</h2>
-        <p class="takeaway">{fullSeries} of {data.missing.length} series cover every month; gaps are months without sittings, late EM-DAT reporting, or heat deaths before 2016.</p>
+        <p class="takeaway">To compare them, every series goes onto one monthly axis. {fullSeries} of {data.missing.length} series cover every month; gaps are months without sittings (recess), EM-DAT after {meta.emdat_complete_until} (late reporting), and monthly heat deaths before 2016.</p>
         <div class="card">
           <h3>Which series has a value in which month</h3>
-          <p class="sub">Blue: value present. Gray: present but incomplete (EM-DAT after {meta.emdat_complete_until}). Empty: no value.</p>
+          <p class="sub">Blue: value present. Empty: no value.</p>
           <div class="chart" id="chart-coverage"></div>
         </div>
       </section>
 
-      <section id="h1">
+      <section id="h1" data-act="Act III · The test">
+        <p class="kicker">Act III · The test</p>
         <h2>H1: attention vs public attention and the physical signal</h2>
-        <p class="takeaway">Long upward movements are shared across series. A shared trend alone makes series look related, so H1 compares them after removing trend and season.</p>
+        <p class="takeaway">At first sight, everything rises together. But a shared trend makes any two series look related, so H1 compares them only after removing trend and season.</p>
         <div class="card">
           <h3>Four series on one axis (12-month means as z-scores)</h3>
           <div class="legend">
@@ -258,6 +287,7 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
             <span style="--c: var(--series-3)">Disasters global</span>
           </div>
           <div class="chart" id="chart-indexed"></div>
+          <p class="sub">The flat orange block from 2022-04 is one spike month (index 100) carried through the 12-month mean.</p>
         </div>
         <details class="card more">
           <summary>More charts: detrended series, monthly panels</summary>
@@ -274,28 +304,33 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         </details>
       </section>
 
-      <section id="lags">
+      <section id="lags" data-act="Act III · The test">
+        <p class="kicker">Act III · The test</p>
         <h2>H1: who moves first?</h2>
         {lagTop && (
           <p class="takeaway">
-            Strongest link: {LAG_NAME[lagTop.signal]} at lag {signed(lagTop.lag, 0)} months (r = {num(lagTop.r, 2)}).
-            Descriptive only; the Granger test in #12 decides.
+            The strongest link: {lagText} (r = {num(lagTop.r, 2)}). A hint, not a proof; the Granger test in #12 decides.
           </p>
         )}
         <div class="card">
           <h3>Correlation of detrended attention (a) with each detrended signal, by lag</h3>
-          <p class="sub">Right of 0: the signal moves first, then the Bundestag. Left of 0: the Bundestag moves first.</p>
+          <p class="sub">Right of 0: the signal moves first, then the Bundestag. Left of 0: the Bundestag moves first. Dashed: German signals.</p>
+          <div class="legend">
+            <span style="--c: var(--series-2)">Trends</span><span style="--c: var(--series-4)">temperature global</span>
+            <span style="--c: var(--series-3)">disasters global</span><span style="--c: var(--text-primary)">temperature DE</span>
+            <span style="--c: var(--text-muted)">disasters DE</span>
+          </div>
           <div class="chart" id="chart-lag"></div>
         </div>
       </section>
 
-      <section id="h2">
+      <section id="h2" data-act="Act III · The test">
+        <p class="kicker">Act III · The test</p>
         <h2>H2: does the Bundestag react to German events?</h2>
         {es[0] && (
           <p class="takeaway">
-            In a month with a German disaster, the climate share is {signed(es[0].diff_pp)} percentage points vs an average
-            month; one month later {signed(es[1]?.diff_pp)} pp ({es[0].events} event months with sittings). German temperature
-            varies {num(sdRatio, 1)}× as much as global.
+            When disaster strikes at home, the Bundestag's climate share {reactWord} ({signed(es[0].diff_pp)} pp in the month, {signed(es[1]?.diff_pp)} pp
+            one month later).{heatTop.length > 0 && <> And heat comes when parliament is away: {heatTop.length - heatSat.length} of the {heatTop.length} deadliest heat months fall into a recess.</>}
           </p>
         )}
         <div class="card">
@@ -303,6 +338,19 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
           <p class="sub">Bars: mean difference to the average month. Gray dots: each event month. Hover a dot for the event.</p>
           <div class="chart" id="chart-event-study"></div>
         </div>
+        {meta.has_heat && (
+          <div class="card">
+            <h3>Heat summers: heat deaths, Bundestag attention and searches, month by month</h3>
+            <p class="sub">
+              {heatTop.length > 0 && <>{heatTop.length - heatSat.length} of the {heatTop.length} deadliest heat months fall into a recess without sittings.
+              {heatDiff != null && <> In the {heatSat.length} with sittings, the climate share is {signed(heatDiff)} pp vs an average month.</>} </>}
+              Note: EM-DAT misses the 2026 heatwave, so the event study above does not contain it.
+            </p>
+            <div class="chart" id="chart-hs-deaths"></div>
+            <div class="chart" id="chart-hs-share"></div>
+            <div class="chart" id="chart-hs-trends"></div>
+          </div>
+        )}
         <details class="card more">
           <summary>More charts: events over time, German events, all event months</summary>
           <h3>Attention (a) with German disaster months as vertical lines</h3><div class="chart" id="chart-events-attention"></div>
@@ -320,11 +368,12 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         </details>
       </section>
 
-      <section id="h3">
+      <section id="h3" data-act="Act III · The test">
+        <p class="kicker">Act III · The test</p>
         <h2>H3: parties and government vs opposition</h2>
         {gaps.length > 0 && (
           <p class="takeaway">
-            {gaps[0].party} speak about climate most above their speaking share ({signed(gaps[0].gap, 1)} pp),
+            Who carries the topic? {gaps[0].party} speak about climate most above their speaking share ({signed(gaps[0].gap, 1)} pp),
             {" "}{gaps.at(-1).party} most below ({signed(gaps.at(-1).gap, 1)} pp). Attention only: stance follows once labels exist.
           </p>
         )}
@@ -357,20 +406,22 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         </details>
       </section>
 
-      <section id="units">
+      <section id="units" data-act="Act III · The test">
+        <p class="kicker">Act III · The test</p>
         <h2>Stance units per party: monthly or quarterly?</h2>
         {thinM && thinQ && (
           <p class="takeaway">
-            Thinnest party: {thinM.party} with a median of {num(thinM.median, 0)} climate sentences per month, {thinQ.party}
-            {" "}{num(thinQ.median, 0)} per quarter: the upper bound for stance windows per party and period (H1b, H3).
+            Stance per party needs enough climate sentences per period. In a typical month {thinM.party} has only
+            {" "}{num(thinM.median, 0)}, in a typical quarter {thinQ.party} has {num(thinQ.median, 0)}: small parties
+            may need quarters or years for H1b and H3.
           </p>
         )}
-        <div class="card"><div class="legend"><span style="--c: var(--series-1)">per month</span><span style="--c: var(--series-2)">per quarter</span></div><div class="chart" id="chart-units"></div></div>
+        <div class="card"><h3>Climate sentences per party in a typical month vs a typical quarter</h3><p class="sub">Median over all months (quarters) in which the party spoke. Stance windows are built around these sentences, so this is the most windows a party-period can have.</p><div class="legend"><span style="--c: var(--series-1)">per month</span><span style="--c: var(--series-2)">per quarter</span></div><div class="chart" id="chart-units"></div></div>
         <details class="card more">
           <summary>Show the numbers</summary>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Party</th><th>per</th><th>periods</th><th>with 0</th><th>p10</th><th>median</th><th>total</th></tr></thead>
+              <thead><tr><th>Party</th><th>per</th><th>periods</th><th>periods with 0</th><th>p10 (10 % of periods have fewer)</th><th>median</th><th>total</th></tr></thead>
               <tbody>
                 {data.stance_units.map((d) => (
                   <tr><td>{d.party}</td><td>{d.grain}</td><td>{d.periods}</td><td>{d.zero}</td><td>{num(d.p10)}</td><td>{num(d.median)}</td><td>{int(d.total)}</td></tr>
@@ -388,7 +439,7 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
           <li>Relevance comes from step 2 (<code>src/02_relevance.py</code>, #5); rerun this page when the keyword list changes.</li>
           <li>Rolling means, the detrended view and the lag correlations are for display only; #12 fixes the methods. Months without sittings are left out of attention, not set to 0 (PR #19).</li>
           <li>Google Trends: each export has its own scale; topic break and spikes are documented in <code>docs/context/data.md</code>.</li>
-          <li>EM-DAT: months after {meta.emdat_complete_until} are incomplete (late reporting, <code>complete_until</code> in <code>config/sources.yaml</code>); German heatwave deaths come from the RKI (#26).</li>
+          <li>EM-DAT: months after {meta.emdat_complete_until} are cut (late reporting, <code>complete_until</code> in <code>config/sources.yaml</code>); German heatwave deaths come from the RKI (#26).</li>
           <li>Rebuild: <code>python src/07_data_understanding.py</code>, <code>python viz/export_data.py</code>; the dev server reloads by itself.</li>
         </ul>
         <details class="card more">
@@ -483,11 +534,23 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
       };
       // the story box: every section takeaway, in page order, linked to its section
       const list = document.getElementById("story-list")!;
+      let act = "", ol: HTMLOListElement | null = null;
       document.querySelectorAll<HTMLElement>("section .takeaway").forEach((t) => {
         const sec = t.closest("section")!;
+        if (sec.dataset.act !== act) {
+          act = sec.dataset.act ?? "";
+          const h = document.createElement("p");
+          h.className = "kicker";
+          h.textContent = act;
+          ol = document.createElement("ol");
+          list.append(h, ol);
+        }
         const li = document.createElement("li");
-        li.innerHTML = `<a href="#${sec.id}"><strong>${sec.querySelector("h2")!.textContent}</strong></a> ${t.textContent}`;
-        list.append(li);
+        const a = document.createElement("a");
+        a.href = `#${sec.id}`;
+        a.textContent = sec.querySelector("h2")!.textContent ?? "";
+        li.append(a, " ", t.textContent ?? "");
+        ol!.append(li);
       });
 
       document.querySelectorAll<HTMLElement>(".chart").forEach((el) => {
