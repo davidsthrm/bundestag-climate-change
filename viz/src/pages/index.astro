@@ -1,20 +1,43 @@
 ---
 import "../styles/global.css";
 import data from "../data/viz.json";
-import { DETRENDED } from "../scripts/charts.js";
+import { DETRENDED, PARTIES } from "../scripts/charts.js";
 
 const { meta } = data;
-const int = (x: number | null) => (x == null ? "–" : Math.round(x).toLocaleString("en-US"));
-const pct = (x: number | null, d = 2) => (x == null ? "–" : `${(x * 100).toFixed(d)} %`);
-const num = (x: number | null, d = 1) => (x == null ? "–" : x.toFixed(d));
+const int = (x: number | null | undefined) => (x == null ? "–" : Math.round(x).toLocaleString("en-US"));
+const pct = (x: number | null | undefined, d = 2) => (x == null ? "–" : `${(x * 100).toFixed(d)} %`);
+const num = (x: number | null | undefined, d = 1) => (x == null ? "–" : x.toFixed(d));
+const signed = (x: number | null | undefined, d = 2) => (x == null ? "–" : `${x > 0 ? "+" : ""}${x.toFixed(d)}`);
 
-const parties = ["CDU/CSU", "SPD", "GRÜNE", "FDP", "DIE LINKE", "AfD", "BSW"];
-const topMonths = [...data.monthly]
-  .filter((d) => d.sentences != null && d.sentences >= 2000 && d.share_a != null)
+// ---- one-line takeaways, all computed from the 07 tables
+const topMonths = data.monthly
+  .filter((d) => d.share_a != null && d.sentences >= 2000)
   .sort((a, b) => b.share_a - a.share_a)
-  .slice(0, 15);
-const unitsMonth = data.stance_units.filter((d) => d.grain === "month");
-const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
+  .slice(0, 3)
+  .map((d) => `${d.month} (${pct(d.share_a, 1)})`);
+const spikes = Object.values(
+  data.trends_spikes.reduce((acc, d) => ((acc[d.term] ??= d), acc), {} as Record<string, any>),
+).filter((d) => d.ratio >= 5);
+const es = Object.fromEntries(data.event_study.map((d) => [d.offset, d]));
+const zeroDe = meta.months_zero_events_de;
+const unitsM = data.stance_units.filter((d) => d.grain === "month" && PARTIES.includes(d.party));
+const unitsQ = data.stance_units.filter((d) => d.grain === "quarter" && PARTIES.includes(d.party));
+const minBy = (rows: any[]) => rows.reduce((a, b) => (b.median < a.median ? b : a), rows[0]);
+const thinM = unitsM.length ? minBy(unitsM) : null;
+const thinQ = unitsQ.length ? minBy(unitsQ) : null;
+const relTotal = data.corpus_party.reduce((a, d) => a + (d.relevant ?? 0), 0);
+const gaps = data.corpus_party
+  .filter((d) => PARTIES.includes(d.party) && relTotal > 0)
+  .map((d) => ({ party: d.party, gap: (d.relevant / relTotal - d.share_of_sentences) * 100 }))
+  .sort((a, b) => b.gap - a.gap);
+const lps = data.corpus_lp;
+const sd = (k: string) => {
+  const v = data.monthly.map((d) => d[k]).filter((x) => x != null);
+  const m = v.reduce((a, b) => a + b, 0) / v.length;
+  return Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length);
+};
+const sdRatio = sd("anomaly_de") / sd("anomaly_global");
+const fullSeries = data.missing.filter((d) => d.missing === 0).length;
 ---
 
 <html lang="en">
@@ -44,33 +67,35 @@ const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
       <div class="tiles">
         <div class="tile"><div class="value">{int(meta.speeches)}</div><div class="label">speeches</div></div>
         <div class="tile"><div class="value">{(meta.sentences / 1e6).toFixed(2)} M</div><div class="label">speech sentences</div></div>
-        <div class="tile"><div class="value">{int(meta.relevant_sentences)}</div><div class="label">climate-relevant sentences ({pct(meta.relevant_sentences / meta.sentences)})</div></div>
-        <div class="tile"><div class="value">{int(meta.main_topic_speeches)}</div><div class="label">main-topic speeches</div></div>
-        <div class="tile"><div class="value">{meta.months}</div><div class="label">months ({meta.months_with_sittings} with sittings)</div></div>
+        <div class="tile"><div class="value">{pct(meta.relevant_sentences / meta.sentences, 1)}</div><div class="label">of sentences are about climate ({int(meta.relevant_sentences)})</div></div>
+        <div class="tile"><div class="value">{int(meta.main_topic_speeches)}</div><div class="label">speeches with climate as main topic</div></div>
+        <div class="tile"><div class="value">{meta.months_with_sittings}</div><div class="label">of {meta.months} months with sittings</div></div>
       </div>
 
       <nav class="toc">
-        <a href="#h1">H1 signals</a><a href="#indexed">H1 indexed</a><a href="#detrended">H1 detrended</a><a href="#trends">H1 Google Trends</a>
-        <a href="#h2">H2 Germany vs world</a><a href="#h3">H3 parties</a><a href="#units">Stance units</a>
-        <a href="#corpus">Corpus and join</a><a href="#top">Top months</a><a href="#notes">Notes</a>
+        <a href="#h1">H1 signals</a><a href="#indexed">H1 indexed</a><a href="#detrended">H1 detrended</a>
+        <a href="#trends">H1 Google Trends</a><a href="#h2">H2 Germany vs world</a><a href="#events">H2 disasters and attention</a>
+        <a href="#h3">H3 parties</a><a href="#units">Stance units</a><a href="#corpus">Corpus and join</a><a href="#notes">Notes</a>
       </nav>
 
       <section id="h1">
         <h2>H1: attention, public attention and the physical signal</h2>
+        {topMonths.length > 0 && <p class="takeaway">Strongest months for climate in the Bundestag: {topMonths.join(", ")}.</p>}
         <p class="sub">Monthly values as faint bars, 12-month rolling mean as the solid line. Empty months: no sittings (left out, not 0). Hover for values.</p>
         <div class="card"><h3>Bundestag (a): share of speech sentences that are climate-relevant</h3><div class="chart" id="chart-share-a"></div></div>
         <div class="card"><h3>Bundestag (b): share of speeches with climate as main topic</h3><div class="chart" id="chart-share-b"></div></div>
         <div class="card"><h3>Public attention: Google Trends “Klimawandel” (search term, DE)</h3><div class="chart" id="chart-trends-main"></div></div>
         <div class="card"><h3>Physical signal: global temperature anomaly (GISTEMP)</h3><div class="chart" id="chart-temp-global-main"></div></div>
-        <div class="card"><h3>Physical signal: climate-related disasters worldwide (EM-DAT)</h3><div class="chart" id="chart-events-global"></div></div>
+        <div class="card">
+          <h3>Physical signal: climate-related disasters worldwide (EM-DAT)</h3>
+          <p class="sub">Months after {meta.emdat_complete_until} are shaded: EM-DAT enters events late, so the drop at the end is missing data, not fewer disasters.</p>
+          <div class="chart" id="chart-events-global"></div>
+        </div>
       </section>
 
       <section id="indexed">
         <h2>H1: smoothed and indexed</h2>
-        <p class="sub">
-          12-month rolling means as z-scores, so the four series share one axis. This compares shape, not size. All of them
-          trend upward, which is why #12 removes trend and seasonality before any test.
-        </p>
+        <p class="takeaway">Long upward movements are shared across series. A shared trend alone makes series look related, so the test removes it first (next section).</p>
         <div class="card">
           <div class="legend">
             <span style="--c: var(--series-1)">Bundestag climate share</span>
@@ -79,87 +104,120 @@ const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
             <span style="--c: var(--series-3)">Disasters global</span>
           </div>
           <div class="chart" id="chart-indexed"></div>
+          <p class="sub">12-month rolling means as z-scores (standard deviations from each series' own mean), so the series share one axis. Shape, not size.</p>
         </div>
       </section>
 
       <section id="detrended">
         <h2>H1: detrended and deseasonalized</h2>
+        <p class="takeaway">What H1 actually compares: month-to-month deviations once trend and seasonality are gone.</p>
         <p class="sub">
-          What the H1 test looks at: each monthly series minus a linear trend and its calendar-month means, as z-scores on
-          one axis (±4 SD). Shared rises are gone, so what remains is month-to-month co-movement. Display only: #12 fixes
-          the actual method. Months without sittings stay empty.
+          Each series minus a linear trend and its calendar-month means, as z-scores (±{4} SD shown; larger values are cut and
+          labelled). Display only: #12 fixes the method.
         </p>
-        {DETRENDED.map((s) => (
-          <div class="card"><h3>{s.label}</h3><div class="chart" id={`chart-detr-${s.key}`}></div></div>
-        ))}
+        <div class="grid-2">
+          {DETRENDED.map((s) => (
+            <div class="card"><h3>{s.label}</h3><div class="chart" id={`chart-detr-${s.key}`}></div></div>
+          ))}
+        </div>
       </section>
 
       <section id="trends">
         <h2>H1: Google Trends, all four exports</h2>
-        <p class="sub">
-          Each file was exported alone, so each has its own 0–100 scale: compare shapes, not levels. Dashed line: topic
-          break {meta.trends_break}. Dots: the 3 months per series with the largest jump over the 6 months before and after.
+        <p class="takeaway">
+          {spikes.length > 0
+            ? <>One-month spikes: {spikes.map((d, i) => <>{i > 0 && ", "}{d.term} {d.month} (×{num(d.ratio, 0)} its neighbours)</>)}. Check results with and without them.</>
+            : "No extreme one-month spikes."}
         </p>
+        <p class="sub">Each export has its own 0–100 scale: compare shapes, not levels. Dashed line: topic break {meta.trends_break}. Dots: the 3 biggest jumps per series.</p>
         <div class="grid-2">
           {meta.trend_terms.map((t) => (
             <div class="card"><h3>{t}</h3><div class="chart" id={`chart-trend-${t}`}></div></div>
           ))}
         </div>
-        <div class="card table-wrap">
-          <table>
-            <thead><tr><th>Series</th><th>month</th><th>index</th><th>median of ±6 months</th><th>ratio</th></tr></thead>
-            <tbody>
-              {data.trends_spikes.map((d) => (
-                <tr><td>{d.term}</td><td>{d.month}</td><td>{d.index}</td><td>{num(d.median_around)}</td><td>{num(d.ratio, 2)}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <details class="card">
+          <summary>Show the spike table</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Series</th><th>month</th><th>index</th><th>median of ±6 months</th><th>× neighbours</th></tr></thead>
+              <tbody>
+                {data.trends_spikes.map((d) => (
+                  <tr><td>{d.term}</td><td>{d.month}</td><td>{d.index}</td><td>{num(d.median_around)}</td><td>{num(d.ratio, 1)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       </section>
 
       <section id="h2">
         <h2>H2: German vs global signal</h2>
-        <p class="sub">Monthly deviation from the 1991–2020 mean of the same calendar month; warm months red, cool months blue, 12-month mean as line.</p>
+        <p class="takeaway">The German anomaly varies {num(sdRatio, 1)}× as much from month to month as the global one; German disasters are rare ({zeroDe} of {meta.months} months have none), so H2 may stay descriptive.</p>
         <div class="grid-2">
           <div class="card"><h3>Temperature anomaly Germany (DWD)</h3><div class="chart" id="chart-temp-de"></div></div>
           <div class="card"><h3>Temperature anomaly global (GISTEMP)</h3><div class="chart" id="chart-temp-global"></div></div>
         </div>
-        <div class="card">
-          <h3>Disasters hitting Germany (EM-DAT)</h3>
-          <p class="sub">{meta.months_zero_events_de} of {meta.months} months have no German event, so H2 may stay descriptive.</p>
-          <div class="chart" id="chart-events-de"></div>
-        </div>
-        <div class="card"><h3>Disasters in the rest of the world (EM-DAT)</h3><div class="chart" id="chart-events-row"></div></div>
-        <div class="card">
-          <h3>Attention (a) and months with a German disaster</h3>
-          <p class="sub">Bars: share of climate-relevant sentences. Vertical lines: months with at least one German EM-DAT event (from the data, not hand-picked).</p>
-          <div class="chart" id="chart-events-attention"></div>
-        </div>
-        <div class="card table-wrap">
-          <h3>Attention (a) around each German event month</h3>
-          <table>
-            <thead><tr><th>Month</th><th>events</th><th>deaths</th><th>t−1</th><th>t</th><th>t+1</th><th>t+2</th></tr></thead>
-            <tbody>
-              {data.events_de.map((d) => (
-                <tr><td>{d.month}</td><td>{d.events_de}</td><td>{int(d.deaths_de)}</td><td>{pct(d["share_a_t-1"])}</td><td>{pct(d["share_a_t+0"])}</td><td>{pct(d["share_a_t+1"])}</td><td>{pct(d["share_a_t+2"])}</td></tr>
-              ))}
-            </tbody>
-          </table>
-          <p class="sub">Mean over all months with sittings: {pct(data.events_de[0]?.share_a_mean_all ?? null)}. Empty: no sittings in that month.</p>
+        <p class="sub">Deviation from the 1991–2020 mean of the same calendar month; warm months red, cool months blue, 12-month mean as line.</p>
+        <div class="grid-2">
+          <div class="card"><h3>Disasters hitting Germany (EM-DAT)</h3><div class="chart" id="chart-events-de"></div></div>
+          <div class="card"><h3>Disasters in the rest of the world (EM-DAT)</h3><div class="chart" id="chart-events-row"></div></div>
         </div>
         {meta.has_heat && (
           <div class="card"><h3>Heat-related deaths in Germany (RKI, from 2016)</h3><div class="chart" id="chart-heat"></div></div>
         )}
       </section>
 
+      <section id="events">
+        <h2>H2: does the Bundestag react to German disasters?</h2>
+        {es[0] && (
+          <p class="takeaway">
+            In a month with a German disaster, the climate share is {signed(es[0].diff_pp)} percentage points vs. an
+            average month; one month later {signed(es[1]?.diff_pp)} pp ({es[0].events} event months with sittings).
+          </p>
+        )}
+        <div class="card">
+          <h3>Attention (a) around German disaster months</h3>
+          <p class="sub">Bars: mean difference to the average month. Gray dots: each event month on its own. Hover a dot for the event.</p>
+          <div class="chart" id="chart-event-study"></div>
+        </div>
+        <div class="card">
+          <h3>Attention (a) over time, German disaster months as vertical lines</h3>
+          <div class="chart" id="chart-events-attention"></div>
+        </div>
+        <details class="card">
+          <summary>Show all {data.events_de.length} event months</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Month</th><th>events</th><th>deaths</th><th>t−1</th><th>t</th><th>t+1</th><th>t+2</th></tr></thead>
+              <tbody>
+                {data.events_de.map((d) => (
+                  <tr><td>{d.month}</td><td>{d.events_de}</td><td>{int(d.deaths_de)}</td><td>{pct(d["share_a_t-1"])}</td><td>{pct(d["share_a_t+0"])}</td><td>{pct(d["share_a_t+1"])}</td><td>{pct(d["share_a_t+2"])}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
       <section id="h3">
         <h2>H3: parties and government vs opposition</h2>
-        <p class="sub">Share of each party's speech sentences that are climate-relevant, per year (other parties in gray). Attention, not stance: stance follows once labels exist.</p>
+        {gaps.length > 0 && (
+          <p class="takeaway">
+            {gaps[0].party} speak about climate most above their speaking share ({signed(gaps[0].gap, 1)} pp),
+            {" "}{gaps.at(-1).party} most below ({signed(gaps.at(-1).gap, 1)} pp). Attention only: stance follows once labels exist.
+          </p>
+        )}
+        <div class="card">
+          <h3>Who speaks, and who speaks about climate</h3>
+          <p class="sub">Top bar: share of all speech sentences per party. Bottom bar: share of the climate-relevant sentences.</p>
+          <div class="chart" id="chart-composition"></div>
+        </div>
         <div class="grid-4">
-          {parties.map((p) => (
+          {PARTIES.map((p) => (
             <div class="card"><h3>{p}</h3><div class="chart" id={`chart-party-${p}`}></div></div>
           ))}
         </div>
+        <p class="sub">Climate share of each party's sentences per year; other parties in gray.</p>
         <div class="card">
           <div class="legend">
             <span style="--c: var(--series-1)">government parties</span>
@@ -171,80 +229,73 @@ const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
 
       <section id="units">
         <h2>Stance units per party: monthly or quarterly?</h2>
-        <p class="sub">
-          Climate-relevant sentences per party and period, only periods in which the party spoke. Stance windows are built
-          around these sentences, so this is an upper bound for how many windows a party-month can have (H1b, H3).
-        </p>
-        <div class="grid-2">
-          {[["per month", unitsMonth], ["per quarter", unitsQuarter]].map(([title, rows]) => (
-            <div class="card table-wrap">
-              <h3>{title}</h3>
-              <table>
-                <thead><tr><th>Party</th><th>periods</th><th>with 0</th><th>p10</th><th>p25</th><th>median</th><th>total</th></tr></thead>
-                <tbody>
-                  {(rows as typeof unitsMonth).map((d) => (
-                    <tr><td>{d.party}</td><td>{d.periods}</td><td>{d.zero}</td><td>{num(d.p10)}</td><td>{num(d.p25)}</td><td>{num(d.median)}</td><td>{int(d.total)}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
-        </div>
+        {thinM && thinQ && (
+          <p class="takeaway">
+            Thinnest party: {thinM.party} with a median of {num(thinM.median, 0)} climate sentences per month, {thinQ.party}
+            {" "}{num(thinQ.median, 0)} per quarter. That is the upper bound for stance windows per party and period (H1b, H3).
+          </p>
+        )}
+        <div class="card"><div class="legend"><span style="--c: var(--series-1)">per month</span><span style="--c: var(--series-2)">per quarter</span></div><div class="chart" id="chart-units"></div></div>
+        <details class="card">
+          <summary>Show the numbers</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Party</th><th>per</th><th>periods</th><th>with 0</th><th>p10</th><th>median</th><th>total</th></tr></thead>
+              <tbody>
+                {data.stance_units.map((d) => (
+                  <tr><td>{d.party}</td><td>{d.grain}</td><td>{d.periods}</td><td>{d.zero}</td><td>{num(d.p10)}</td><td>{num(d.median)}</td><td>{int(d.total)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       </section>
 
       <section id="corpus">
         <h2>Corpus and join</h2>
-        <p class="sub">All speech sentences per month (the denominator of attention a). Gaps are months without sittings; dashed lines mark new legislative periods.</p>
-        <div class="card"><h3>Speech sentences per month</h3><div class="chart" id="chart-volume"></div></div>
-        <div class="card table-wrap">
-          <table>
-            <thead><tr><th>Legislative period</th><th>months</th><th>speeches</th><th>sentences</th><th>sentences per speech (mean / median)</th></tr></thead>
-            <tbody>
-              {data.corpus_lp.map((d) => (
-                <tr><td>{d.lp}. Bundestag</td><td>{d.first_month} – {d.last_month}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{num(d.mean_sentences_per_speech)} / {num(d.median_sentences_per_speech)}</td></tr>
-              ))}
-            </tbody>
-          </table>
+        <p class="takeaway">
+          {lps.length > 1 && <>Speeches got shorter: {num(lps[0].mean_sentences_per_speech)} sentences per speech in the {lps[0].lp}. Bundestag,
+          {" "}{num(lps.at(-1).mean_sentences_per_speech)} in the {lps.at(-1).lp}. </>}
+          {fullSeries} of {data.missing.length} series cover every month; gaps are months without sittings or late EM-DAT reporting.
+        </p>
+        <div class="grid-2">
+          <div class="card"><h3>Sentences per speech by legislative period</h3><p class="sub">Bars: mean. Dots: median.</p><div class="chart" id="chart-lp"></div></div>
+          <div class="card"><h3>Speech sentences per month</h3><p class="sub">Gaps: no sittings. Dashed: new legislative period.</p><div class="chart" id="chart-volume"></div></div>
         </div>
-        <div class="card table-wrap">
-          <table>
-            <thead><tr><th>Party</th><th>speeches</th><th>sentences</th><th>share of sentences</th><th>relevant</th><th>climate share</th><th>main-topic speeches</th><th>sceptic markers</th></tr></thead>
-            <tbody>
-              {data.corpus_party.map((d) => (
-                <tr><td>{d.party}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{pct(d.share_of_sentences)}</td><td>{int(d.relevant)}</td><td>{pct(d.share_relevant)}</td><td>{int(d.main_topic_speeches)}</td><td>{int(d.sceptic)}</td></tr>
-              ))}
-            </tbody>
-          </table>
+        <div class="card">
+          <h3>Join: which series has a value in which month</h3>
+          <p class="sub">Blue: value present. Gray: present but incomplete (EM-DAT after {meta.emdat_complete_until}). Empty: no value.</p>
+          <div class="chart" id="chart-coverage"></div>
         </div>
-        <div class="card table-wrap">
-          <h3>Join: months without a value per series</h3>
-          <table>
-            <thead><tr><th>Series</th><th>months</th><th>missing</th><th>first</th><th>last</th></tr></thead>
-            <tbody>
-              {data.missing.map((d) => (
-                <tr><td><code>{d.series}</code></td><td>{d.months}</td><td>{d.missing}</td><td>{d.first_month}</td><td>{d.last_month}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="top">
-        <h2>Months with the highest climate share</h2>
-        <p class="sub">Months with at least 2,000 speech sentences, so single short sittings don't dominate.</p>
-        <div class="card table-wrap">
-          <table>
-            <thead><tr><th>Month</th><th>climate share (a)</th><th>main topic (b)</th><th>Trends: Klimawandel</th><th>anomaly global</th><th>disasters global</th></tr></thead>
-            <tbody>
-              {topMonths.map((d) => (
-                <tr>
-                  <td>{d.month}</td><td>{pct(d.share_a)}</td><td>{pct(d.share_b)}</td><td>{d.trends_Klimawandel ?? "–"}</td>
-                  <td>{d.anomaly_global?.toFixed(2) ?? "–"} °C</td><td>{d.events_global ?? "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <details class="card">
+          <summary>Show corpus tables</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Legislative period</th><th>months</th><th>speeches</th><th>sentences</th><th>per speech (mean / median)</th></tr></thead>
+              <tbody>
+                {data.corpus_lp.map((d) => (
+                  <tr><td>{d.lp}. Bundestag</td><td>{d.first_month} – {d.last_month}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{num(d.mean_sentences_per_speech)} / {num(d.median_sentences_per_speech)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <table>
+              <thead><tr><th>Party</th><th>speeches</th><th>sentences</th><th>share</th><th>climate sentences</th><th>climate share</th><th>main-topic speeches</th><th>sceptic markers</th></tr></thead>
+              <tbody>
+                {data.corpus_party.map((d) => (
+                  <tr><td>{d.party}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{pct(d.share_of_sentences, 1)}</td><td>{int(d.relevant)}</td><td>{pct(d.share_relevant)}</td><td>{int(d.main_topic_speeches)}</td><td>{int(d.sceptic)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <table>
+              <thead><tr><th>Series</th><th>months</th><th>missing</th><th>first</th><th>last</th></tr></thead>
+              <tbody>
+                {data.missing.map((d) => (
+                  <tr><td><code>{d.series}</code></td><td>{d.months}</td><td>{d.missing}</td><td>{d.first_month}</td><td>{d.last_month}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       </section>
 
       <section id="notes">
@@ -252,10 +303,10 @@ const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
         <ul class="notes">
           <li>Every number on this page comes from <code>results/2_data_understanding/tables/07_*.csv</code>, written by <code>src/07_data_understanding.py</code>; the paper figures come from the same tables.</li>
           <li>Relevance comes from step 2 (<code>src/02_relevance.py</code>, #5); rerun this page when the keyword list changes.</li>
-          <li>Rolling means are for display only. Months without sittings are left out of attention, not set to 0 (PR #19).</li>
-          <li>Google Trends: each export has its own scale; the topic break and spike months are documented in <code>docs/context/data.md</code>.</li>
-          <li>EM-DAT: the last months are incomplete (late reporting), and German heatwave deaths are not usable there; heat deaths come from the RKI (#26).</li>
-          <li>Rebuild: <code>python src/07_data_understanding.py</code>, <code>python viz/export_data.py</code>, then <code>npm run dev</code> in <code>viz/</code>.</li>
+          <li>Rolling means and the detrended view are for display only. Months without sittings are left out of attention, not set to 0 (PR #19).</li>
+          <li>Google Trends: each export has its own scale; topic break and spikes are documented in <code>docs/context/data.md</code>.</li>
+          <li>EM-DAT: months after {meta.emdat_complete_until} are incomplete (late reporting, <code>complete_until</code> in <code>config/sources.yaml</code>); German heatwave deaths come from the RKI (#26).</li>
+          <li>Rebuild: <code>python src/07_data_understanding.py</code>, <code>python viz/export_data.py</code>; the dev server reloads by itself.</li>
         </ul>
       </section>
     </main>

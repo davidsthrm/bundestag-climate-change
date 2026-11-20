@@ -22,6 +22,7 @@ Tables
   07_stance_units    relevant sentences per party-month and party-quarter (H1b/H3: monthly or quarterly?)
   07_trends_spikes   per Trends term the 3 months with the largest jump over their neighbours
   07_events_de       months with a German EM-DAT event and attention (a) from 1 month before to 2 after (H2)
+  07_event_study     mean attention (a) at each offset around German event months vs. the mean of all months
   07_summary         key numbers for results/2_data_understanding/README.md
 
 python src/07_data_understanding.py
@@ -43,6 +44,7 @@ INTERIM = ROOT / "data" / "interim"
 PROCESSED = ROOT / "data" / "processed"
 OUT = ROOT / "results" / "2_data_understanding"
 SETTINGS = yaml.safe_load((ROOT / "config" / "settings.yaml").read_text(encoding="utf-8"))
+EMDAT_COMPLETE = yaml.safe_load((ROOT / "config" / "sources.yaml").read_text(encoding="utf-8"))["emdat"]["complete_until"]
 START, END = SETTINGS["start_date"][:7], (SETTINGS["end_date"] or "9999-12")[:7]
 MONTHS = pd.period_range(START, END, freq="M").strftime("%Y-%m")
 
@@ -127,6 +129,16 @@ def events_de(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def event_study(ev: pd.DataFrame) -> pd.DataFrame:
+    """Mean over German event months per offset; months without sittings are left out."""
+    rows = []
+    for k in (-1, 0, 1, 2):
+        v = ev[f"share_a_t{k:+d}"].dropna()
+        rows.append({"offset": k, "events": len(v), "mean_share_a": round(v.mean(), 5),
+                     "diff_pp": round((v.mean() - ev["share_a_mean_all"].iloc[0]) * 100, 3)})
+    return pd.DataFrame(rows)
+
+
 def missing(df: pd.DataFrame) -> pd.DataFrame:
     cols = [c for c in df.columns if c not in ("month", "sitting") and not c.endswith(("_12m", "_detr_z"))]
     return pd.DataFrame([{"series": c, "months": len(df), "missing": int(df[c].isna().sum()),
@@ -182,7 +194,7 @@ def stance_units(sent: pd.DataFrame) -> pd.DataFrame:
 def trends_spikes(df: pd.DataFrame) -> pd.DataFrame:
     """Jump = value / median of the 6 months before and after (the month itself excluded)."""
     rows = []
-    for c in [c for c in df.columns if c.startswith("trends_") and not c.endswith("_12m")]:
+    for c in [c for c in df.columns if c.startswith("trends_") and not c.endswith(("_12m", "_detr_z"))]:
         s = df.set_index("month")[c]
         around = pd.concat([s.shift(k) for k in [*range(-6, 0), *range(1, 7)]], axis=1).median(axis=1)
         ratio = (s / around.replace(0, np.nan)).nlargest(3)
@@ -231,6 +243,14 @@ def _panel(ax, x, monthly_vals, rolled, color, title, unit) -> None:
     _axis(ax, title, unit)
 
 
+def _incomplete(ax, df: pd.DataFrame) -> None:
+    """Shade EM-DAT months after complete_until (late reporting)."""
+    start = pd.Period(EMDAT_COMPLETE, freq="M") + 1
+    ax.axvspan(start.to_timestamp(), pd.to_datetime(df["month"].iloc[-1]) + pd.offsets.MonthEnd(),
+               color=MUTED, alpha=0.15, linewidth=0)
+    ax.text(start.to_timestamp(), ax.get_ylim()[1], " incomplete", fontsize=7, color=MUTED, va="top")
+
+
 def fig_h1(df: pd.DataFrame, has_rel: bool, path: Path) -> None:
     x = pd.to_datetime(df["month"])
     fig, axes = plt.subplots(4, 1, figsize=(8, 8.5), sharex=True)
@@ -245,6 +265,7 @@ def fig_h1(df: pd.DataFrame, has_rel: bool, path: Path) -> None:
            "Physical signal: global temperature anomaly (GISTEMP)", "°C vs 1991–2020")
     _panel(axes[3], x, df["events_global"], df["events_global_12m"], DISASTERS,
            "Physical signal: climate-related disasters worldwide (EM-DAT)", "events per month")
+    _incomplete(axes[3], df)
     fig.text(0.01, 0.005, f"Bars: monthly values. Line: {ROLL}-month rolling mean. "
              "Empty Bundestag months: no sittings.", fontsize=7, color=MUTED)
     fig.tight_layout(rect=(0, 0.02, 1, 1))
@@ -265,6 +286,7 @@ def fig_h2(df: pd.DataFrame, path: Path) -> None:
     axes[1].set_yscale("symlog", linthresh=1)
     _axis(axes[1], "Climate-related disasters (EM-DAT): Germany vs. rest of world", "events per month (log)")
     axes[1].legend(frameon=False, fontsize=8)
+    _incomplete(axes[1], df)
     fig.tight_layout()
     fig.savefig(path, dpi=200)
     plt.close(fig)
@@ -309,6 +331,7 @@ def main() -> None:
         tables["07_party_year"] = share_by(sent.dropna(subset=["party"]), ["party", "year"])
         tables["07_gov_year"] = share_by(gov, ["side", "year"])
         tables["07_stance_units"] = stance_units(sent)
+        tables["07_event_study"] = event_study(tables["07_events_de"])
     tables["07_summary"] = summary(df, sent, has_rel, tables.get("07_stance_units"))
 
     (OUT / "tables").mkdir(parents=True, exist_ok=True)

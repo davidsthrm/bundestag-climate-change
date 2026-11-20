@@ -152,3 +152,10 @@ code { font-size: 0.85em; }
 /* let grid columns shrink below their content width (wide tables scroll inside their card) */
 .grid-2 > *, .grid-3 > *, .grid-4 > *, .tiles > * { min-width: 0; }
 header.top > div { min-width: 0; }
+
+/* one-line finding at the top of a section */
+.takeaway { font-size: 1.02rem; font-weight: 500; max-width: 75ch; margin: 4px 0 12px; padding-left: 12px; border-left: 3px solid var(--series-1); }
+/* numbers behind a chart, folded away */
+details.card > summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
+details.card[open] > summary { margin-bottom: 8px; }
+details.card table + table { margin-top: 20px; }

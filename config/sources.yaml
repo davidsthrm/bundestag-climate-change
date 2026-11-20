@@ -51,6 +51,7 @@ emdat:
   portal_url: "https://public.emdat.be"
   subgroups: [Climatological, Hydrological, Meteorological]   # climate-related; no geophysical (#2, #17)
   country_iso: "DEU"                                          # Germany; everything else = rest of world
+  complete_until: "2025-12"   # later months are incomplete (late reporting, ~15 vs ~25 events/month); shaded in the app
 
 rki_heat:
   # RKI weekly report on heat-related mortality ("Wochenbericht zur hitzebedingten Mortalität"), #26.

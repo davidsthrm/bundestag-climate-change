@@ -40,12 +40,13 @@ def main() -> None:
             "has_relevance": "share_a" in monthly[0],
             "has_heat": "heat_deaths_de" in monthly[0],
             "trend_terms": [k.removeprefix("trends_") for k in monthly[0]
-                            if k.startswith("trends_") and not k.endswith("_12m")],
+                            if k.startswith("trends_") and not k.endswith(("_12m", "_detr_z"))],
             "trends_break": SOURCES["trends"]["topic_break"],
+            "emdat_complete_until": SOURCES["emdat"]["complete_until"],
         },
         "monthly": monthly,
         **{name: records(name) for name in ("corpus_lp", "corpus_party", "party_year", "gov_year",
-                                            "stance_units", "trends_spikes", "events_de", "missing")},
+                                            "stance_units", "trends_spikes", "events_de", "event_study", "missing")},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
