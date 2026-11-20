@@ -11,6 +11,7 @@ overrides:
 
   # --- PDS in the 15th Bundestag: 2 MPs without group status, counted as DIE LINKE (same party).
   - {speaker_id: 11003584, party: DIE LINKE, until: "2005-10-17"}  # Gesine Lötzsch
+  - {speaker_id: 11003206, party: DIE LINKE, until: "2005-10-17"}  # Petra Pau
 
   # --- Wrong speaker_id in PoliCorp (ID belongs to another person).
   - {speaker_id: 11005304, party: SPD, name_contains: "Mende"}     # Dirk-Ulrich Mende (ID of a CDU MP)
