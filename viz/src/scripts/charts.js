@@ -61,10 +61,19 @@ export function render(data) {
   const xDomain = [toDate(first), nextMonth(last)];
   const style = { background: "transparent", color: c.secondary, fontSize: "12px", fontFamily: "inherit", overflow: "visible" };
 
+  // one failing chart must not blank the others: show the error in its own box
   const draw = (id, make) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.replaceChildren(make(Math.max(el.clientWidth, 260)));
+    try {
+      el.replaceChildren(make(Math.max(el.clientWidth, 260)));
+    } catch (err) {
+      console.error(id, err);
+      const msg = document.createElement("p");
+      msg.className = "chart-error";
+      msg.textContent = `Chart failed: ${err.message}`;
+      el.replaceChildren(msg);
+    }
   };
   const time = (width, height, y, marks, extra = {}) =>
     Plot.plot({
@@ -225,8 +234,9 @@ export function render(data) {
     return v == null ? null : { month: e.month, deaths: e.deaths_de, k, x: k + jitter(i), diff: (v - e.share_a_mean_all) * 100 };
   }).filter(Boolean));
   draw("chart-event-study", (w) => Plot.plot({
-    width: w, height: 280, style, marginLeft: 56, marginTop: 20,
-    x: { domain: [-1.5, 2.5], ticks: [-1, 0, 1, 2], tickFormat: (k) => OFF[k], label: "months relative to a German disaster month" },
+    width: w, height: 300, style, marginLeft: 56, marginTop: 20, marginBottom: 44,
+    x: { domain: [-1.5, 2.5], ticks: [-1, 0, 1, 2], tickFormat: (k) => OFF[k], label: "months relative to a German disaster month",
+      labelAnchor: "center", labelOffset: 36 },
     y: { label: "percentage points vs. average month", grid: true, tickFormat: (d) => (d > 0 ? "+" : "") + d },
     marks: [
       Plot.dot(ESdots, { x: "x", y: "diff", r: 2.5, fill: c.muted, fillOpacity: 0.6 }),
@@ -241,7 +251,8 @@ export function render(data) {
   }));
 
   // ---------------------------------------------------------------- H3: parties
-  const PY = data.party_year.map((d) => ({ ...d, sharePct: d.share * 100 }));
+  const MIN_PARTY_YEAR = 2000; // sentences; smaller party-years (e.g. BSW 2024) give noisy shares
+  const PY = data.party_year.filter((d) => d.sentences >= MIN_PARTY_YEAR).map((d) => ({ ...d, sharePct: d.share * 100 }));
   if (PY.length) {
     const yMax = Math.max(...PY.map((d) => d.sharePct)) * 1.05;
     const years = Array.from({ length: +last.slice(0, 4) - 2003 }, (_, i) => 2004 + i);
@@ -289,8 +300,9 @@ export function render(data) {
     q: U.find((d) => d.party === p && d.grain === "quarter")?.median,
   }));
   draw("chart-units", (w) => Plot.plot({
-    width: w, height: uOrder.length * 34 + 50, style, marginLeft: 80, marginRight: 40,
-    x: { type: "symlog", label: "median climate-relevant sentences per period (log scale)", grid: true },
+    width: w, height: uOrder.length * 34 + 70, style, marginLeft: 80, marginRight: 40, marginBottom: 44,
+    x: { type: "symlog", ticks: [0, 1, 2, 5, 10, 20, 50, 100, 200, 500].filter((t) => t <= Math.max(...uWide.map((d) => d.q ?? 0)) * 1.5),
+      tickFormat: "d", label: "median climate-relevant sentences per period (log scale)", labelAnchor: "center", labelOffset: 36, grid: true },
     y: { domain: uOrder, label: null },
     color: { domain: ["per month", "per quarter"], range: [c.s1, c.s2] },
     marks: [
@@ -318,26 +330,29 @@ export function render(data) {
     return [...rows, { group: g, party: "other / unknown", share: Math.max(other, 0) }];
   }).filter((d) => d.share > 0 && (d.group === "all speech" || relTotal > 0));
   const compParties = [...PARTIES, "other / unknown"];
+  const segs = groups.flatMap(([g]) => {
+    let x = 0;
+    return compParties.map((p) => comp.find((d) => d.group === g && d.party === p)).filter(Boolean)
+      .map((d) => ({ ...d, x1: x, x2: (x += d.share), mid: x - d.share / 2 }));
+  });
   draw("chart-composition", (w) => Plot.plot({
-    width: w, height: 150, style, marginLeft: 100, marginRight: 16,
+    width: w, height: 130, style, marginLeft: 100, marginRight: 16, marginBottom: 28,
     x: { domain: [0, 100], label: null, tickFormat: (d) => d + " %" },
-    y: { domain: groups.map(([g]) => g), label: null },
-    color: { domain: compParties, range: compParties.map(partyColor), legend: true },
+    y: { domain: groups.map(([g]) => g).filter((g) => segs.some((d) => d.group === g)), label: null },
     marks: [
-      Plot.barX(comp, Plot.stackX({ x: "share", y: "group", fill: "party", order: compParties, insetRight: 2, rx: 3 })),
-      Plot.text(comp.filter((d) => d.share >= 6), Plot.stackX({ x: "share", y: "group", z: "party", order: compParties,
-        text: (d) => `${d.party.replace("other / unknown", "other")} ${fmt(d.share, 0)} %`,
-        fill: c.primary, stroke: c.surface, strokeWidth: 3, fontSize: 11 })),
-      Plot.tip(comp, Plot.pointer(Plot.stackX({ x: "share", y: "group", order: compParties, fontSize: 12,
-        title: (d) => `${d.party}\n${fmt(d.share, 1)} % of ${d.group}` }))),
+      Plot.barX(segs, { x1: "x1", x2: "x2", y: "group", fill: (d) => partyColor(d.party), insetRight: 2, rx: 3 }),
+      Plot.text(segs.filter((d) => d.share >= 6), { x: "mid", y: "group",
+        text: (d) => `${d.party === "other / unknown" ? "other" : d.party} ${fmt(d.share, 0)} %`,
+        fill: c.primary, stroke: c.surface, strokeWidth: 3, fontSize: 11 }),
+      Plot.tip(segs, Plot.pointer({ x: "mid", y: "group", fontSize: 12, title: (d) => `${d.party}\n${fmt(d.share, 1)} % of ${d.group}` })),
     ],
   }));
 
   // ---------------------------------------------------------------- corpus: speech length per period
   const LPr = data.corpus_lp.map((d) => ({ ...d, label: `${d.lp}.` }));
   draw("chart-lp", (w) => Plot.plot({
-    width: w, height: 220, style, marginLeft: 44, marginTop: 20,
-    x: { label: "legislative period", domain: LPr.map((d) => d.label) },
+    width: w, height: 240, style, marginLeft: 44, marginTop: 20, marginBottom: 44,
+    x: { label: "legislative period (Bundestag)", domain: LPr.map((d) => d.label), labelAnchor: "center", labelOffset: 36 },
     y: { label: "sentences per speech", grid: true },
     marks: [
       Plot.barY(LPr, { x: "label", y: "mean_sentences_per_speech", fill: c.muted, rx: 4, insetLeft: 8, insetRight: 8 }),

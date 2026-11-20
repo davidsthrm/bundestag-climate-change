@@ -210,6 +210,12 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
         <div class="card">
           <h3>Who speaks, and who speaks about climate</h3>
           <p class="sub">Top bar: share of all speech sentences per party. Bottom bar: share of the climate-relevant sentences.</p>
+          <div class="legend">
+            <span style="--c: var(--party-union)">CDU/CSU</span><span style="--c: var(--party-spd)">SPD</span>
+            <span style="--c: var(--party-gruene)">GRÜNE</span><span style="--c: var(--party-fdp)">FDP</span>
+            <span style="--c: var(--party-linke)">DIE LINKE</span><span style="--c: var(--party-afd)">AfD</span>
+            <span style="--c: var(--party-bsw)">BSW</span><span style="--c: var(--text-muted)">other / unknown</span>
+          </div>
           <div class="chart" id="chart-composition"></div>
         </div>
         <div class="grid-4">
@@ -217,7 +223,7 @@ const fullSeries = data.missing.filter((d) => d.missing === 0).length;
             <div class="card"><h3>{p}</h3><div class="chart" id={`chart-party-${p}`}></div></div>
           ))}
         </div>
-        <p class="sub">Climate share of each party's sentences per year; other parties in gray.</p>
+        <p class="sub">Climate share of each party's sentences per year; other parties in gray. Party-years with fewer than 2,000 sentences are left out (e.g. BSW 2024).</p>
         <div class="card">
           <div class="legend">
             <span style="--c: var(--series-1)">government parties</span>

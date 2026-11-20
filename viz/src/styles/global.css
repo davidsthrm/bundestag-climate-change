@@ -159,3 +159,4 @@ header.top > div { min-width: 0; }
 details.card > summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
 details.card[open] > summary { margin-bottom: 8px; }
 details.card table + table { margin-top: 20px; }
+.chart-error { color: var(--div-warm); font-size: 0.85rem; }
