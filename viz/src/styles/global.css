@@ -10,8 +10,8 @@
   --border: rgba(11, 11, 11, 0.1);
   --series-1: #2a78d6; /* Bundestag */
   --series-2: #eb6834; /* Google Trends */
-  --series-3: #1baf7a; /* temperature DE */
-  --series-4: #eda100; /* temperature global */
+  --series-3: #1baf7a; /* disasters */
+  --series-4: #eda100; /* global temperature */
   --div-warm: #e34948;
   --div-cool: #2a78d6;
   --div-mid: #f0efec;

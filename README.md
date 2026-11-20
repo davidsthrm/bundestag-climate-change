@@ -62,6 +62,7 @@ government and opposition. Tested with three methods: lexicon + TF-IDF, embeddin
 | 4b | `src/04b_disasters.py` | monthly climate-related disasters (EM-DAT), Germany + rest of world |
 | 5 | `src/05_trends.py`      | monthly Google Trends index (DE) |
 | 6 | `src/06_merge.py`       | one monthly panel in `data/processed/` |
+| 7 | `src/07_data_understanding.py` | descriptive tables and figures for the hypotheses in `results/2_data_understanding/`, read by the viz app (`viz/`) |
 
 ## Data sources
 | Data | Source | Coverage | How we get it |
@@ -85,6 +86,7 @@ python src/01_speeches.py            # -> data/interim/sentences.parquet
 python src/04_temperature.py         # -> data/processed/temperature_monthly.csv
 python src/04b_disasters.py          # -> data/processed/disasters_monthly.csv
 python src/05_trends.py              # -> data/processed/trends_monthly.csv
+python src/07_data_understanding.py  # -> results/2_data_understanding/ (after 02_relevance)
 ```
 
 ### Google Trends export (manual)

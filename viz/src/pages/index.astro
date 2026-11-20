@@ -3,19 +3,17 @@ import "../styles/global.css";
 import data from "../data/viz.json";
 
 const { meta } = data;
-const int = (x: number | null) => (x == null ? "–" : x.toLocaleString("en-US"));
+const int = (x: number | null) => (x == null ? "–" : Math.round(x).toLocaleString("en-US"));
 const pct = (x: number | null, d = 2) => (x == null ? "–" : `${(x * 100).toFixed(d)} %`);
-const r = (x: number | null) => (x == null ? "–" : x.toFixed(2));
-const rStyle = (x: number | null) =>
-  x == null ? "" : `background: color-mix(in oklab, var(${x >= 0 ? "--div-cool" : "--div-warm"}) ${Math.round(Math.abs(x) * 55)}%, transparent)`;
+const num = (x: number | null, d = 1) => (x == null ? "–" : x.toFixed(d));
 
 const parties = ["CDU/CSU", "SPD", "GRÜNE", "FDP", "DIE LINKE", "AfD", "BSW"];
 const topMonths = [...data.monthly]
-  .filter((d) => d.sentences != null && d.sentences >= 2000)
-  .sort((a, b) => b.share - a.share)
+  .filter((d) => d.sentences != null && d.sentences >= 2000 && d.share_a != null)
+  .sort((a, b) => b.share_a - a.share_a)
   .slice(0, 15);
-const corrShare = data.correlations.filter((d) => d.target === "Climate sentence share");
-const corrSpeech = data.correlations.filter((d) => d.target === "Climate speech share");
+const unitsMonth = data.stance_units.filter((d) => d.grain === "month");
+const unitsQuarter = data.stance_units.filter((d) => d.grain === "quarter");
 ---
 
 <html lang="en">
@@ -30,183 +28,171 @@ const corrSpeech = data.correlations.filter((d) => d.target === "Climate speech 
         <div>
           <h1>Heat Without Debate?</h1>
           <p class="lede">
-            Climate change in the German Bundestag next to the physical climate signal and public attention,{" "}
-            {meta.first_month} to {meta.last_month}. Exploratory view of the pipeline outputs so far.
+            Data understanding for the hypotheses: climate attention in the German Bundestag next to the physical climate
+            signal and public attention, {meta.first_month} to {meta.last_month}. Descriptive only; H1 and H2 are tested in #12.
           </p>
         </div>
         <button class="theme" id="theme-toggle" type="button">Toggle theme</button>
       </header>
 
-      <p class="note">
-        <strong>Provisional:</strong> “climate-related” means a sentence contains one of the {meta.keywords.core.length}{" "}
-        <em>core</em> keywords from <code>config/keywords_de.yaml</code> (simple substring match). This is a stand-in until
-        step 2 (<code>src/02_relevance.py</code>) exists. Stance (step 3) is not available yet.
-      </p>
+      {!meta.has_relevance && (
+        <p class="note"><strong>No attention yet:</strong> run <code>src/02_relevance.py</code>, then
+          <code>src/07_data_understanding.py</code> and <code>viz/export_data.py</code> again.</p>
+      )}
 
       <div class="tiles">
         <div class="tile"><div class="value">{int(meta.speeches)}</div><div class="label">speeches</div></div>
         <div class="tile"><div class="value">{(meta.sentences / 1e6).toFixed(2)} M</div><div class="label">speech sentences</div></div>
-        <div class="tile"><div class="value">{int(meta.climate_sentences)}</div><div class="label">climate sentences ({pct(meta.climate_sentences / meta.sentences)})</div></div>
-        <div class="tile"><div class="value">{meta.n_months}</div><div class="label">months ({meta.session_months} with plenary sessions)</div></div>
-        <div class="tile"><div class="value">{meta.trend_terms.length}</div><div class="label">Google Trends series</div></div>
+        <div class="tile"><div class="value">{int(meta.relevant_sentences)}</div><div class="label">climate-relevant sentences ({pct(meta.relevant_sentences / meta.sentences)})</div></div>
+        <div class="tile"><div class="value">{int(meta.main_topic_speeches)}</div><div class="label">main-topic speeches</div></div>
+        <div class="tile"><div class="value">{meta.months}</div><div class="label">months ({meta.months_with_sittings} with sittings)</div></div>
       </div>
 
       <nav class="toc">
-        <a href="#signals">Three signals</a><a href="#indexed">Indexed</a><a href="#correlation">Correlations</a>
-        <a href="#trends">Google Trends</a><a href="#temperature">Temperature</a><a href="#parties">Parties</a>
-        <a href="#government">Government vs opposition</a><a href="#keywords">Keywords</a><a href="#sceptic">Sceptic markers</a>
-        <a href="#volume">Debate volume</a><a href="#top">Top months</a><a href="#notes">Notes</a>
+        <a href="#h1">H1 signals</a><a href="#indexed">H1 indexed</a><a href="#trends">H1 Google Trends</a>
+        <a href="#h2">H2 Germany vs world</a><a href="#h3">H3 parties</a><a href="#units">Stance units</a>
+        <a href="#corpus">Corpus and join</a><a href="#top">Top months</a><a href="#notes">Notes</a>
       </nav>
 
-      <section id="signals">
-        <h2>Three signals on one timeline</h2>
-        <p class="sub">Monthly values as faint bars or lines, 12-month rolling average as the solid line. Hover for values.</p>
-        <div class="card"><h3>Bundestag: share of speech sentences that are climate-related</h3><div class="chart" id="chart-share"></div></div>
+      <section id="h1">
+        <h2>H1: attention, public attention and the physical signal</h2>
+        <p class="sub">Monthly values as faint bars, 12-month rolling mean as the solid line. Empty months: no sittings (left out, not 0). Hover for values.</p>
+        <div class="card"><h3>Bundestag (a): share of speech sentences that are climate-relevant</h3><div class="chart" id="chart-share-a"></div></div>
+        <div class="card"><h3>Bundestag (b): share of speeches with climate as main topic</h3><div class="chart" id="chart-share-b"></div></div>
         <div class="card"><h3>Public attention: Google Trends “Klimawandel” (search term, DE)</h3><div class="chart" id="chart-trends-main"></div></div>
-        <div class="card"><h3>Physical signal: temperature anomaly Germany (DWD)</h3><div class="chart" id="chart-temp-main"></div></div>
+        <div class="card"><h3>Physical signal: global temperature anomaly (GISTEMP)</h3><div class="chart" id="chart-temp-global-main"></div></div>
+        <div class="card"><h3>Physical signal: climate-related disasters worldwide (EM-DAT)</h3><div class="chart" id="chart-events-global"></div></div>
       </section>
 
       <section id="indexed">
-        <h2>Smoothed and indexed</h2>
+        <h2>H1: smoothed and indexed</h2>
         <p class="sub">
-          12-month rolling averages, each converted to z-scores (standard deviations from its own mean) so the four
-          series share one axis. This compares shape, not size.
+          12-month rolling means as z-scores, so the four series share one axis. This compares shape, not size. All of them
+          trend upward, which is why #12 removes trend and seasonality before any test.
         </p>
         <div class="card">
           <div class="legend">
             <span style="--c: var(--series-1)">Bundestag climate share</span>
             <span style="--c: var(--series-2)">Trends: Klimawandel</span>
-            <span style="--c: var(--series-3)">Temperature DE</span>
             <span style="--c: var(--series-4)">Temperature global</span>
+            <span style="--c: var(--series-3)">Disasters global</span>
           </div>
           <div class="chart" id="chart-indexed"></div>
         </div>
       </section>
 
-      <section id="correlation">
-        <h2>Correlations</h2>
+      <section id="trends">
+        <h2>H1: Google Trends, all four exports</h2>
         <p class="sub">
-          Each dot is one month with plenary sessions; the line is a least-squares fit. Pearson r below, with the
-          Bundestag series lagged 0, 1, 3 and 12 months behind the driver. Descriptive only: all series trend upward
-          and are autocorrelated, so these numbers overstate any causal link.
+          Each file was exported alone, so each has its own 0–100 scale: compare shapes, not levels. Dashed line: topic
+          break {meta.trends_break}. Dots: the 3 months per series with the largest jump over the 6 months before and after.
         </p>
-        <div class="grid-3">
-          <div class="card"><h3>vs. Google Trends “Klimawandel”</h3><div class="chart" id="chart-scatter-trends"></div></div>
-          <div class="card"><h3>vs. temperature anomaly DE</h3><div class="chart" id="chart-scatter-de"></div></div>
-          <div class="card"><h3>vs. temperature anomaly global</h3><div class="chart" id="chart-scatter-global"></div></div>
-        </div>
         <div class="grid-2">
-          {[["Climate sentence share (monthly)", corrShare, true], ["Climate speech share (monthly)", corrSpeech, false]].map(([title, rows, smoothed]) => (
+          {meta.trend_terms.map((t) => (
+            <div class="card"><h3>{t}</h3><div class="chart" id={`chart-trend-${t}`}></div></div>
+          ))}
+        </div>
+        <div class="card table-wrap">
+          <table>
+            <thead><tr><th>Series</th><th>month</th><th>index</th><th>median of ±6 months</th><th>ratio</th></tr></thead>
+            <tbody>
+              {data.trends_spikes.map((d) => (
+                <tr><td>{d.term}</td><td>{d.month}</td><td>{d.index}</td><td>{num(d.median_around)}</td><td>{num(d.ratio, 2)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="h2">
+        <h2>H2: German vs global signal</h2>
+        <p class="sub">Monthly deviation from the 1991–2020 mean of the same calendar month; warm months red, cool months blue, 12-month mean as line.</p>
+        <div class="grid-2">
+          <div class="card"><h3>Temperature anomaly Germany (DWD)</h3><div class="chart" id="chart-temp-de"></div></div>
+          <div class="card"><h3>Temperature anomaly global (GISTEMP)</h3><div class="chart" id="chart-temp-global"></div></div>
+        </div>
+        <div class="card">
+          <h3>Disasters hitting Germany (EM-DAT)</h3>
+          <p class="sub">{meta.months_zero_events_de} of {meta.months} months have no German event, so H2 may stay descriptive.</p>
+          <div class="chart" id="chart-events-de"></div>
+        </div>
+        <div class="card"><h3>Disasters in the rest of the world (EM-DAT)</h3><div class="chart" id="chart-events-row"></div></div>
+        {meta.has_heat && (
+          <div class="card"><h3>Heat-related deaths in Germany (RKI, from 2016)</h3><div class="chart" id="chart-heat"></div></div>
+        )}
+      </section>
+
+      <section id="h3">
+        <h2>H3: parties and government vs opposition</h2>
+        <p class="sub">Share of each party's speech sentences that are climate-relevant, per year (other parties in gray). Attention, not stance: stance follows once labels exist.</p>
+        <div class="grid-4">
+          {parties.map((p) => (
+            <div class="card"><h3>{p}</h3><div class="chart" id={`chart-party-${p}`}></div></div>
+          ))}
+        </div>
+        <div class="card">
+          <div class="legend">
+            <span style="--c: var(--series-1)">government parties</span>
+            <span style="--c: var(--series-2)">opposition</span>
+          </div>
+          <div class="chart" id="chart-gov"></div>
+        </div>
+      </section>
+
+      <section id="units">
+        <h2>Stance units per party: monthly or quarterly?</h2>
+        <p class="sub">
+          Climate-relevant sentences per party and period, only periods in which the party spoke. Stance windows are built
+          around these sentences, so this is an upper bound for how many windows a party-month can have (H1b, H3).
+        </p>
+        <div class="grid-2">
+          {[["per month", unitsMonth], ["per quarter", unitsQuarter]].map(([title, rows]) => (
             <div class="card table-wrap">
               <h3>{title}</h3>
               <table>
-                <thead><tr><th>Driver</th><th>lag 0</th><th>lag 1</th><th>lag 3</th><th>lag 12</th>{smoothed && <th>12m smoothed</th>}</tr></thead>
+                <thead><tr><th>Party</th><th>periods</th><th>with 0</th><th>p10</th><th>p25</th><th>median</th><th>total</th></tr></thead>
                 <tbody>
-                  {(rows as typeof corrShare).map((d) => (
-                    <tr>
-                      <td>{d.driver}</td>
-                      <td class="r" style={rStyle(d.lag0)}>{r(d.lag0)}</td>
-                      <td class="r" style={rStyle(d.lag1)}>{r(d.lag1)}</td>
-                      <td class="r" style={rStyle(d.lag3)}>{r(d.lag3)}</td>
-                      <td class="r" style={rStyle(d.lag12)}>{r(d.lag12)}</td>
-                      {smoothed && <td class="r" style={rStyle(d.lag0_12m)}>{r(d.lag0_12m)}</td>}
-                    </tr>
+                  {(rows as typeof unitsMonth).map((d) => (
+                    <tr><td>{d.party}</td><td>{d.periods}</td><td>{d.zero}</td><td>{num(d.p10)}</td><td>{num(d.p25)}</td><td>{num(d.median)}</td><td>{int(d.total)}</td></tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ))}
         </div>
-        <p class="note">
-          “Climate speech share” = share of speeches with at least one climate sentence. Smoothed correlations use
-          overlapping 12-month windows and look much stronger than they are.
-        </p>
       </section>
 
-      <section id="trends">
-        <h2>Google Trends, all four exports</h2>
-        <p class="sub">Each file was exported alone, so each has its own 0–100 scale. Compare shapes, not levels across panels.</p>
-        <div class="grid-2">
-          {meta.trend_terms.map((t) => (
-            <div class="card"><h3>{t}</h3><div class="chart" id={`chart-trend-${t}`}></div></div>
-          ))}
-        </div>
-        <p class="note">
-          <strong>Check the exports:</strong> “Klimawandel” jumps to 100 in 2022-04 and “Klimaschutz” in 2023-04 while the
-          months around sit near 10. Single-month spikes like this are often sampling glitches; a re-export on another
-          day would show whether they are real. They also lift the 12-month averages for a full year.
-          “Klima” (topic) also covers weather and air conditioning, which may explain why it moves differently.
-        </p>
-      </section>
-
-      <section id="temperature">
-        <h2>Temperature anomalies</h2>
-        <p class="sub">Monthly deviation from the 1991–2020 mean of the same calendar month. Warm months red, cool months blue, 12-month average as line.</p>
-        <div class="card"><h3>Germany (DWD area mean)</h3><div class="chart" id="chart-temp-de"></div></div>
-        <div class="card"><h3>Global (NASA GISTEMP v4, re-baselined)</h3><div class="chart" id="chart-temp-global"></div></div>
-      </section>
-
-      <section id="parties">
-        <h2>Parties</h2>
-        <p class="sub">Share of each party's speech sentences that are climate-related, per year (other parties in gray for reference). Years with fewer than 2,000 sentences of a party are left out.</p>
-        <div class="grid-4">
-          {parties.map((p) => (
-            <div class="card"><h3>{p}</h3><div class="chart" id={`chart-party-${p}`}></div></div>
-          ))}
-        </div>
-        <div class="card"><h3>Whole period, all years combined</h3><div class="chart" id="chart-party-total"></div></div>
-      </section>
-
-      <section id="government">
-        <h2>Government vs opposition</h2>
-        <p class="sub">Climate share of speech sentences by whether the speaker's party was in the federal coalition on that day (<code>config/governments.yaml</code>).</p>
-        <div class="card">
-          <div class="legend">
-            <span style="--c: var(--series-1)">Government parties</span>
-            <span style="--c: var(--series-2)">Opposition</span>
-          </div>
-          <div class="chart" id="chart-gov"></div>
-        </div>
-      </section>
-
-      <section id="keywords">
-        <h2>Keywords over time</h2>
-        <p class="sub">Number of speech sentences containing each dictionary term, per year. Groups top to bottom: core, energy, sceptic markers.</p>
-        <div class="card"><div class="chart" id="chart-keywords"></div></div>
-      </section>
-
-      <section id="sceptic">
-        <h2>Sceptic markers</h2>
-        <p class="sub">
-          Sentences with “Klimahysterie”, “Klimareligion”, “Klimapanik” or “Klimaideologie”. Only {int(meta.sceptic_sentences)} in total,
-          so this is a hint for stance annotation, not a measure.
-        </p>
-        <div class="grid-2">
-          <div class="card"><h3>Per year</h3><div class="chart" id="chart-sceptic-year"></div></div>
-          <div class="card"><h3>Per party, whole period</h3><div class="chart" id="chart-sceptic-party"></div></div>
-        </div>
-      </section>
-
-      <section id="volume">
-        <h2>Debate volume</h2>
-        <p class="sub">All speech sentences per month (the denominator of the climate share). Gaps are recess months; dashed lines mark new legislative periods.</p>
+      <section id="corpus">
+        <h2>Corpus and join</h2>
+        <p class="sub">All speech sentences per month (the denominator of attention a). Gaps are months without sittings; dashed lines mark new legislative periods.</p>
         <div class="card"><h3>Speech sentences per month</h3><div class="chart" id="chart-volume"></div></div>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Legislative period</th><th>months</th><th>speeches</th><th>sentences</th><th>climate sentences</th><th>climate share</th></tr></thead>
+            <thead><tr><th>Legislative period</th><th>months</th><th>speeches</th><th>sentences</th><th>sentences per speech (mean / median)</th></tr></thead>
             <tbody>
-              {data.lp.map((d) => (
-                <tr><td>{d.lp}. Bundestag</td><td>{d.first} – {d.last}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{int(d.climate)}</td><td>{pct(d.share)}</td></tr>
+              {data.corpus_lp.map((d) => (
+                <tr><td>{d.lp}. Bundestag</td><td>{d.first_month} – {d.last_month}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{num(d.mean_sentences_per_speech)} / {num(d.median_sentences_per_speech)}</td></tr>
               ))}
             </tbody>
           </table>
         </div>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Party</th><th>speeches</th><th>sentences</th><th>climate sentences</th><th>climate share</th><th>sceptic markers</th></tr></thead>
+            <thead><tr><th>Party</th><th>speeches</th><th>sentences</th><th>share of sentences</th><th>relevant</th><th>climate share</th><th>main-topic speeches</th><th>sceptic markers</th></tr></thead>
             <tbody>
-              {data.party_total.map((d) => (
-                <tr><td>{d.party}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{int(d.climate)}</td><td>{pct(d.share)}</td><td>{int(d.sceptic)}</td></tr>
+              {data.corpus_party.map((d) => (
+                <tr><td>{d.party}</td><td>{int(d.speeches)}</td><td>{int(d.sentences)}</td><td>{pct(d.share_of_sentences)}</td><td>{int(d.relevant)}</td><td>{pct(d.share_relevant)}</td><td>{int(d.main_topic_speeches)}</td><td>{int(d.sceptic)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div class="card table-wrap">
+          <h3>Join: months without a value per series</h3>
+          <table>
+            <thead><tr><th>Series</th><th>months</th><th>missing</th><th>first</th><th>last</th></tr></thead>
+            <tbody>
+              {data.missing.map((d) => (
+                <tr><td><code>{d.series}</code></td><td>{d.months}</td><td>{d.missing}</td><td>{d.first_month}</td><td>{d.last_month}</td></tr>
               ))}
             </tbody>
           </table>
@@ -218,12 +204,12 @@ const corrSpeech = data.correlations.filter((d) => d.target === "Climate speech 
         <p class="sub">Months with at least 2,000 speech sentences, so single short sittings don't dominate.</p>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Month</th><th>climate share</th><th>climate sentences</th><th>all sentences</th><th>Trends: Klimawandel</th><th>anomaly DE</th><th>anomaly global</th></tr></thead>
+            <thead><tr><th>Month</th><th>climate share (a)</th><th>main topic (b)</th><th>Trends: Klimawandel</th><th>anomaly global</th><th>disasters global</th></tr></thead>
             <tbody>
               {topMonths.map((d) => (
                 <tr>
-                  <td>{d.month}</td><td>{pct(d.share)}</td><td>{int(d.climate)}</td><td>{int(d.sentences)}</td>
-                  <td>{d.Klimawandel ?? "–"}</td><td>{d.anomaly_de?.toFixed(2) ?? "–"} °C</td><td>{d.anomaly_global?.toFixed(2) ?? "–"} °C</td>
+                  <td>{d.month}</td><td>{pct(d.share_a)}</td><td>{pct(d.share_b)}</td><td>{d.trends_Klimawandel ?? "–"}</td>
+                  <td>{d.anomaly_global?.toFixed(2) ?? "–"} °C</td><td>{d.events_global ?? "–"}</td>
                 </tr>
               ))}
             </tbody>
@@ -234,14 +220,12 @@ const corrSpeech = data.correlations.filter((d) => d.target === "Climate speech 
       <section id="notes">
         <h2>Notes and caveats</h2>
         <ul class="notes">
-          <li>Speeches: PoliCorp-GermaParl2-PLUS (15th–20th Bundestag) plus the 21st Bundestag converted from Bundestag Open Data XML. Interjections excluded; speaker roles MPs, government, Bundesrat.</li>
-          <li>Climate relevance is a provisional keyword match on the <em>core</em> list only. Substring matching means e.g. “Klimaschutzgesetz” counts, but so would false hits. Replace with step 2 output.</li>
-          <li>Many protocols write CO₂ as “CO 2” (all of 2009, most of 2008, 2018 and 2019), which the keyword “co2” misses. This page treats “CO 2” as “co2”; step 2 needs the same fix.</li>
-          <li>The sentence share depends on how sentences are split; PoliCorp and the XML converter split slightly differently (not yet validated on this machine).</li>
-          <li>Correlations are descriptive Pearson coefficients on monthly data, not models. Time-series methods (detrending, lags, ARIMA/VAR) belong in the real analysis.</li>
-          <li>Google Trends values are sampled by Google; a re-export on another day can differ slightly.</li>
-          <li>Data ends {meta.last_month} (<code>end_date</code> in <code>config/settings.yaml</code>).</li>
-          <li>Rebuild the data: <code>python viz/export_data.py</code>, then <code>npm run dev</code> in <code>viz/</code>.</li>
+          <li>Every number on this page comes from <code>results/2_data_understanding/tables/07_*.csv</code>, written by <code>src/07_data_understanding.py</code>; the paper figures come from the same tables.</li>
+          <li>Relevance comes from step 2 (<code>src/02_relevance.py</code>, #5); rerun this page when the keyword list changes.</li>
+          <li>Rolling means are for display only. Months without sittings are left out of attention, not set to 0 (PR #19).</li>
+          <li>Google Trends: each export has its own scale; the topic break and spike months are documented in <code>docs/context/data.md</code>.</li>
+          <li>EM-DAT: the last months are incomplete (late reporting), and German heatwave deaths are not usable there; heat deaths come from the RKI (#26).</li>
+          <li>Rebuild: <code>python src/07_data_understanding.py</code>, <code>python viz/export_data.py</code>, then <code>npm run dev</code> in <code>viz/</code>.</li>
         </ul>
       </section>
     </main>

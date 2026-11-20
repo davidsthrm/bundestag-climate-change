@@ -42,6 +42,7 @@ trends:
   # see README ("Google Trends export"). Files go into data/raw/trends/.
   geo: "DE"
   start: "2004-01-01"
+  topic_break: "2016-11"   # climate-change topics drop to 0, B_topic_klima jumps x3 (see docs/context/data.md)
 
 emdat:
   # EM-DAT (CRED, UCLouvain), free for academic use after registration; licence forbids
