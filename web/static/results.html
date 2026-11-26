@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Results</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .phase h2 { display: flex; gap: 10px; align-items: baseline; }
+  .phase .no { color: var(--ink-2); font-weight: 500; }
+  .files { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .files .btn.on { background: var(--accent-wash); }
+  .view img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); background: #fff; }
+  td code { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="stack">
+  <div>
+    <h1>Results</h1>
+    <p class="muted" style="margin:0">Key numbers from <code>results/&lt;phase&gt;/README.md</code> and every generated table and figure.
+      Files are written by the scripts, never by hand. Click a file to open it.</p>
+  </div>
+  <div id="out" class="stack"></div>
+</main>
+<script>
+const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/#(\d+)\b/g, '<a href="board.html#i$1">#$1</a>');
+async function openFile(btn, path, view) {
+  btn.parentElement.querySelectorAll(".btn").forEach(b => b.classList.toggle("on", b === btn && !b.classList.contains("on")));
+  if (!btn.classList.contains("on")) { view.innerHTML = ""; return; }
+  if (/\.(png|svg|jpe?g)$/i.test(path)) { view.innerHTML = `<img src="/repo/${esc(path)}" alt="${esc(path)}">`; return; }
+  if (path.endsWith(".csv")) {
+    view.innerHTML = `<p class="muted">Loading …</p>`;
+    const d = await api("csv", { path });
+    view.innerHTML = `<p class="muted small">${d.rows.length} rows · <a href="/repo/${esc(path)}">raw</a></p><div></div>`;
+    renderTable(view.lastElementChild, d.columns, d.rows);
+    return;
+  }
+  view.innerHTML = `<a href="/repo/${esc(path)}">open ${esc(path)}</a>`;
+}
+function fileBlock(title, files) {
+  const box = document.createElement("div");
+  box.innerHTML = `<h3>${title}</h3>` + (files.length ? `<div class="files"></div><div class="view"></div>`
+    : `<p class="muted small">No files yet.</p>`);
+  const f = box.querySelector(".files"), v = box.querySelector(".view");
+  for (const p of files) {
+    const b = document.createElement("button");
+    b.className = "btn small"; b.textContent = p.split("/").pop();
+    b.onclick = () => openFile(b, p, v).catch(e => v.innerHTML = `<p class="banner err">${esc(e.message)}</p>`);
+    f.append(b);
+  }
+  return box;
+}
+(async () => {
+  const d = await api("results");
+  const out = document.getElementById("out");
+  for (const ph of d.phases) {
+    const [no, ...rest] = ph.phase.split("_");
+    const sec = document.createElement("section");
+    sec.className = "card phase stack";
+    const tables = ph.tables.map(t => {
+      const body = t.rows.length ? t.rows.map(r => `<tr>${r.map(c => `<td>${md(c)}</td>`).join("")}</tr>`).join("")
+        : `<tr><td colspan="${t.header.length}" class="muted">No key numbers yet.</td></tr>`;
+      return `<h3>${esc(t.heading)}</h3><div class="tbl-wrap"><table><thead><tr>${t.header.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`;
+    }).join("");
+    sec.innerHTML = `<h2><span class="no">${no}</span>${esc(rest.join(" ").replace(/^./, c => c.toUpperCase()))}</h2>
+      <p class="muted small" style="margin:0">${md(ph.intro.replace(/^What belongs here:\s*/, ""))}</p>${tables}`;
+    sec.append(fileBlock("Tables & figures", ph.files));
+    out.append(sec);
+  }
+  const ann = document.createElement("section");
+  ann.className = "card phase";
+  ann.innerHTML = `<h2>Annotation</h2><p class="muted small">Check samples and gold-set files in <code>annotation/</code>.</p>`;
+  ann.append(fileBlock("Files", d.annotation));
+  out.append(ann);
+})().catch(e => document.getElementById("out").innerHTML = `<div class="banner err">${esc(e.message)}</div>`);
+</script>
+</body>
+</html>

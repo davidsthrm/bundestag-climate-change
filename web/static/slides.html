@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presentation Slides</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  #stage { background: #000; border-radius: var(--radius); overflow: hidden; }
+  #stage div.marpit > svg { display: none; width: 100%; height: auto; }
+  #stage div.marpit > svg.on { display: block; }
+  #stage:fullscreen { display: flex; align-items: center; }
+  #stage:fullscreen div.marpit { width: 100%; }
+  #stage:fullscreen div.marpit > svg.on { max-height: 100vh; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 16px; }
+  .thumbs div.marpit > svg { width: 100%; height: auto; border-radius: 6px; cursor: pointer; outline: 1px solid var(--border); }
+  .thumbs div.marpit > svg.on { outline: 2px solid var(--accent); }
+  .fallback section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 8px; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="bar">
+    <div><h1 style="margin:0">Slides</h1>
+      <p class="muted small" style="margin:0">Rendered live from <code id="src">slides/*.md</code> with Marp. Edit the Markdown and reload. Keys: ← → , F = fullscreen.</p></div>
+    <div class="filters">
+      <select id="deck"></select>
+      <button class="btn" id="prev">←</button><span class="num" id="pos">–</span><button class="btn" id="next">→</button>
+      <button class="btn" id="fs">Fullscreen</button>
+      <a class="btn" id="raw" target="_blank">Markdown</a>
+    </div>
+  </div>
+  <div id="msg"></div>
+  <div id="stage"></div>
+  <div class="thumbs" id="thumbs"></div>
+</main>
+<script type="module">
+const $ = id => document.getElementById(id);
+let slides = [], thumbs = [], cur = 0;
+const { decks } = await api("slides");
+if (!decks.length) {
+  $("msg").innerHTML = `<div class="banner">No deck yet: put a Marp Markdown file into <code>slides/</code>.</div>`;
+} else {
+  $("deck").innerHTML = decks.map(d => `<option>${d}</option>`).join("");
+  const want = new URLSearchParams(location.search).get("deck");
+  if (want && decks.includes(want)) $("deck").value = want;
+  $("deck").onchange = () => load($("deck").value);
+  load($("deck").value);
+}
+
+function go(i) {
+  if (!slides.length) return;
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((s, k) => s.classList.toggle("on", k === cur));
+  thumbs.forEach((s, k) => s.classList.toggle("on", k === cur));
+  $("pos").textContent = `${cur + 1} / ${slides.length}`;
+  history.replaceState(null, "", `#${cur + 1}`);
+}
+
+async function load(path) {
+  $("src").textContent = path;
+  $("raw").href = `/repo/${path}`;
+  const md = await (await fetch(`/repo/${path}`)).text();
+  try {
+    const { Marp } = await import("https://esm.sh/@marp-team/marp-core@4.4.0?bundle");
+    const { html, css } = new Marp({ html: true, math: "katex" }).render(md);
+    // one shadow root each for stage and thumbnails, so Marp's CSS stays inside
+    for (const id of ["stage", "thumbs"]) {
+      const host = $(id);
+      const root = host.shadowRoot || host.attachShadow({ mode: "open" });
+      root.innerHTML = `<style>${css}
+        div.marpit > svg { display: ${id === "stage" ? "none" : "block"}; width: 100%; height: auto; }
+        div.marpit > svg.on { display: block; }
+        ${id === "thumbs" ? `div.marpit { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+          div.marpit > svg { cursor: pointer; border-radius: 6px; outline: 1px solid rgba(128,128,128,.4); }
+          div.marpit > svg.on { outline: 3px solid #257de0; }` : ""}
+        :host(:fullscreen) div.marpit > svg.on { max-height: 100vh; }</style>${html}`;
+    }
+    $("thumbs").classList.remove("thumbs");
+    slides = [...$("stage").shadowRoot.querySelectorAll("div.marpit > svg")];
+    thumbs = [...$("thumbs").shadowRoot.querySelectorAll("div.marpit > svg")];
+    thumbs.forEach((t, k) => t.onclick = () => go(k));
+    $("msg").innerHTML = "";
+    go((parseInt(location.hash.slice(1)) || 1) - 1);
+  } catch (e) {
+    // offline or CDN blocked: show the slide sources instead
+    $("msg").innerHTML = `<div class="banner err">Marp could not be loaded (${esc(e.message)}). Showing the Markdown per slide.</div><br>`;
+    const parts = md.replace(/^---[\s\S]*?---\s*/, "").split(/^---\s*$/m);
+    $("stage").innerHTML = `<div class="fallback">${parts.map(p => `<section>${esc(p.trim())}</section>`).join("")}</div>`;
+    $("stage").style.background = "transparent";
+    slides = [];
+  }
+}
+$("prev").onclick = () => go(cur - 1);
+$("next").onclick = () => go(cur + 1);
+$("fs").onclick = () => $("stage").requestFullscreen();
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input, select, textarea")) return;
+  if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+  if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+  if (e.key === "f") $("stage").requestFullscreen();
+});
+</script>
+</body>
+</html>

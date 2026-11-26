@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Explorer</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  section + section { margin-top: 32px; }
+  .charts { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+  .reader-wrap { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .reader-wrap { grid-template-columns: 1fr; } }
+  .list { max-height: 72vh; overflow: auto; padding: 0; }
+  .item { padding: 10px 14px; border-bottom: 1px solid var(--grid); cursor: pointer; }
+  .item:hover { background: var(--surface-2); }
+  .item.on { background: var(--accent-wash); }
+  .item .t { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .item .s { font-size: 13px; margin-top: 4px; }
+  .reader { position: sticky; top: 68px; max-height: calc(100vh - 84px); overflow: auto; }
+  .reader p.sent { margin: 0 0 6px; }
+  .sent.rel { background: var(--hit); color: var(--hit-ink); border-radius: 4px; padding: 1px 4px; margin-left: -4px; }
+  .sent.sc { box-shadow: inset 3px 0 0 var(--crit); padding-left: 8px; }
+  .sent.en { text-decoration: underline dotted var(--s3) 2px; text-underline-offset: 3px; }
+  .sent.focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sent .m { font-size: 11px; opacity: .8; margin-left: 4px; }
+  mark { background: var(--hit); color: var(--hit-ink); border-radius: 3px; padding: 0 2px; }
+  .legend-h { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin: 8px 0 14px; }
+  .legend-h span::before { content: ""; display: inline-block; width: 18px; height: 10px; margin-right: 5px; vertical-align: -1px; border-radius: 2px; }
+  .legend-h .l1::before { background: var(--hit); }
+  .legend-h .l2::before { box-shadow: inset 3px 0 0 var(--crit); }
+  .legend-h .l3::before { border-bottom: 2px dotted var(--s3); height: 6px; border-radius: 0; }
+  .pill { font-size: 13px; background: var(--accent-wash); border-radius: 999px; padding: 2px 4px 2px 10px; }
+  .pill button { border: 0; background: none; cursor: pointer; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main>
+  <div id="status"></div>
+
+  <section id="signals">
+    <div class="chart-head">
+      <div><h2>Signals over time</h2>
+        <p class="muted small" style="margin:0">Hover to compare months across all charts; click a month to list its speeches below.
+          Gaps are months without sittings (no value, not zero).</p></div>
+      <div class="filters">
+        <div class="seg" id="smooth"><button data-v="0">Monthly</button><button data-v="1" class="on">12-month average</button></div>
+      </div>
+    </div>
+    <div class="grid charts" style="margin-top:12px">
+      <div class="card"><h3>Bundestag: climate-relevant sentences</h3><div class="muted small">share of all speech sentences</div><div id="c-share"></div></div>
+      <div class="card"><h3>Bundestag: climate as main topic</h3><div class="muted small">share of speeches (≥ 20 % and ≥ 2 relevant sentences)</div><div id="c-main"></div></div>
+      <div class="card"><div class="chart-head"><h3>Public attention: Google Trends</h3>
+          <select id="term"></select></div>
+        <div class="muted small" id="term-note">index 0–100, each term exported alone (own scale)</div><div id="c-trends"></div></div>
+      <div class="card"><div class="chart-head"><h3>Physical signal: temperature anomaly</h3><div class="chips" id="temp-legend"></div></div>
+        <div class="muted small">°C vs. 1991–2020, per calendar month</div><div id="c-temp"></div></div>
+    </div>
+  </section>
+
+  <section id="parties">
+    <div class="chart-head">
+      <div><h2>By party</h2><p class="muted small" style="margin:0">12-month window: relevant sentences ÷ all sentences of the party (pooled, so small months don't jump).</p></div>
+      <div class="seg" id="pmetric"><button data-v="share" class="on">Share of sentences</button><button data-v="main">Main-topic speeches</button></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="chips" id="party-legend"></div>
+      <div id="c-party" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <section id="speeches">
+    <h2>Speeches</h2>
+    <div class="card filters" style="margin-bottom:12px">
+      <div class="seg" id="mode"><button data-v="speeches" class="on">Browse speeches</button><button data-v="search">Search sentences</button></div>
+      <input type="search" id="q" placeholder="speaker name …">
+      <select id="party"><option value="">all parties</option></select>
+      <label>from <input type="month" id="from"></label>
+      <label>to <input type="month" id="to"></label>
+      <select id="climate"><option value="">all speeches</option><option value="relevant">with climate sentences</option><option value="main">climate as main topic</option></select>
+      <select id="gov"><option value="">government + opposition</option><option value="1">government parties</option><option value="0">opposition</option></select>
+      <select id="sort"><option value="date_desc">newest first</option><option value="date_asc">oldest first</option><option value="hits">most climate sentences</option><option value="share">highest climate share</option></select>
+      <span id="month-pill"></span>
+    </div>
+    <div class="reader-wrap">
+      <div class="card list" id="list"></div>
+      <div class="card reader" id="reader"><p class="muted">Select a speech to read it.</p></div>
+    </div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const P = new URLSearchParams(location.search);
+const state = { mode: "speeches", month: P.get("month") || "", offset: 0, current: P.get("speech") };
+let M = [], PM = [], charts = {}, smooth = true, pmetric = "share";
+const hiddenParties = new Set(["fraktionslos", "parteilos"]);
+
+function seg(el, cb) {
+  el.querySelectorAll("button").forEach(b => b.onclick = () => {
+    el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); cb(b.dataset.v);
+  });
+}
+
+function pickMonth(m) {
+  state.month = m; $("climate").value = $("climate").value || "relevant";
+  if (state.mode === "search") setMode("speeches");
+  loadList(true);
+  $("speeches").scrollIntoView({ behavior: "smooth" });
+}
+
+function signalSeries(values, name, color) {
+  return smooth ? [{ name: name + " (monthly)", values, color: "var(--axis)", width: 1.25 },
+                   { name: name + " (12-mo avg)", values: rolling(values), color }]
+                : [{ name, values, color }];
+}
+
+function drawSignals() {
+  const x = M.map(r => r.month), col = k => M.map(r => r[k]);
+  const pf = v => (v * 100).toFixed(v < 0.1 ? 1 : 0) + "%";
+  const common = { x, group: "sig", onClick: pickMonth, height: 190 };
+  const spec = {
+    share: { ...common, yFmt: pf, tipFmt: v => fmt.pct(v), series: signalSeries(col("share"), "relevant sentences", "var(--s1)") },
+    main: { ...common, yFmt: pf, tipFmt: v => fmt.pct(v), series: signalSeries(col("main_share"), "main-topic speeches", "var(--s1)") },
+    trends: { ...common, yFmt: v => v, tipFmt: v => fmt.num(v, 0), series: signalSeries(col("trends_" + $("term").value), $("term").value, "var(--s2)"),
+              marks: $("term").value === "Klima" ? [{ month: "2016-11", label: "topic break" }] : [] },
+    temp: { ...common, zero: false, yFmt: v => v.toFixed(1), tipFmt: v => (v > 0 ? "+" : "") + v.toFixed(2) + " °C",
+            series: [{ name: "global (GISTEMP)", values: smooth ? rolling(col("anomaly_global")) : col("anomaly_global"), color: "var(--s8)" },
+                     { name: "Germany (DWD)", values: smooth ? rolling(col("anomaly_de")) : col("anomaly_de"), color: "var(--s3)", width: smooth ? 2 : 1.25 }] },
+  };
+  for (const [k, o] of Object.entries(spec)) {
+    if (charts[k]) charts[k].update(o); else charts[k] = lineChart($("c-" + k), o);
+  }
+  $("temp-legend").innerHTML = spec.temp.series.map(s => `<span class="chip" style="--c:${s.color};cursor:default"><span class="sw"></span>${s.name}</span>`).join("");
+}
+
+function drawParties() {
+  const x = M.map(r => r.month);
+  const by = {};
+  for (const r of PM) (by[r.party] ||= {})[r.month] = r;
+  const parties = PARTY_ORDER.filter(p => by[p]);
+  const series = parties.map(p => {
+    const rows = x.map(m => by[p][m]);
+    const values = x.map((_, i) => {
+      const win = rows.slice(Math.max(0, i - 11), i + 1).filter(Boolean);
+      if (!win.length) return null;
+      if (pmetric === "share") { const s = win.reduce((a, r) => a + r.sentences, 0); return s > 2000 ? win.reduce((a, r) => a + r.relevant, 0) / s : null; }
+      return win.reduce((a, r) => a + (r.main_topic || 0), 0);
+    });
+    // no value outside the party's time in parliament
+    const first = rows.findIndex(Boolean), last = rows.length - 1 - [...rows].reverse().findIndex(Boolean);
+    values.forEach((_, i) => { if (i < first || i > last) values[i] = null; });
+    return { name: p, values, color: partyColor(p), hidden: hiddenParties.has(p) };
+  });
+  $("party-legend").innerHTML = series.map(s =>
+    `<button class="chip ${s.hidden ? "off" : ""}" data-p="${esc(s.name)}" style="--c:${s.color}"><span class="sw"></span>${esc(s.name)}</button>`).join("");
+  $("party-legend").querySelectorAll("button").forEach(b => b.onclick = () => {
+    hiddenParties.has(b.dataset.p) ? hiddenParties.delete(b.dataset.p) : hiddenParties.add(b.dataset.p); drawParties();
+  });
+  const o = { x, series, height: 280, onClick: pickMonth,
+              yFmt: pmetric === "share" ? v => (v * 100).toFixed(1) + "%" : v => v,
+              tipFmt: pmetric === "share" ? v => fmt.pct(v) : v => v + " speeches / 12 mo" };
+  if (charts.party) charts.party.update(o); else charts.party = lineChart($("c-party"), o);
+}
+
+// ------------------------------------------------------------ speech list
+function filters() {
+  return { party: $("party").value, from: $("from").value, to: $("to").value, climate: $("climate").value,
+           gov: $("gov").value, month: state.month };
+}
+function setMode(m) {
+  state.mode = m;
+  $("mode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === m));
+  $("q").placeholder = m === "search" ? "words in sentences, e.g. Hitzesommer (≥ 3 letters) …" : "speaker name …";
+  $("sort").style.display = m === "search" ? "none" : "";
+}
+let listToken = 0;
+async function loadList(reset) {
+  const tok = ++listToken;
+  if (reset) { state.offset = 0; $("list").innerHTML = `<p class="muted" style="padding:14px">Loading …</p>`; }
+  $("month-pill").innerHTML = state.month ? `<span class="pill">month ${fmt.month(state.month)} <button id="clr" title="clear">✕</button></span>` : "";
+  if (state.month) $("clr").onclick = () => { state.month = ""; loadList(true); };
+  const q = $("q").value.trim();
+  try {
+    if (state.mode === "search") {
+      if (q.length < 3) { $("list").innerHTML = `<p class="muted" style="padding:14px">Type at least 3 letters. Searches all 5.1 M sentences, newest first (case-insensitive substring).</p>`; return; }
+      const f = filters(); if (f.month) { f.from = f.from || f.month; f.to = f.to || f.month; }
+      const d = await api("search", { q, ...f, limit: 200 });
+      if (tok !== listToken) return;
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+      $("list").innerHTML = `<p class="muted small" style="padding:8px 14px;margin:0">${d.items.length}${d.truncated ? "+" : ""} sentences · ${d.seconds} s</p>` +
+        d.items.map(h => `<div class="item" data-id="${esc(h.speech)}" data-seq="${h.seq}">
+          <div class="t"><span class="muted small num">${h.date}</span><b>${esc(h.name)}</b>${partyTag(h.party)}</div>
+          <div class="s">${esc(h.text).replace(re, m => `<mark>${m}</mark>`)}</div></div>`).join("") || `<p class="muted" style="padding:14px">No sentence found.</p>`;
+    } else {
+      const d = await api("speeches", { ...filters(), speaker: q, sort: $("sort").value, offset: state.offset, limit: 50 });
+      if (tok !== listToken) return;
+      const html = d.items.map(s => `<div class="item" data-id="${esc(s.id)}">
+          <div class="t"><span class="muted small num">${s.date}</span><b>${esc(s.name)}</b>${partyTag(s.party)}
+            ${s.main ? `<span class="tag">main topic</span>` : ""}</div>
+          <div class="s muted">${s.hits ? `${s.hits} of ${s.n} sentences climate-relevant (${fmt.pct(s.share, 0)})` : `${s.n} sentences`}
+            ${s.topic ? " · " + esc(s.topic.slice(0, 90)) : ""}</div></div>`).join("");
+      const more = d.offset + d.items.length < d.total ? `<div style="padding:12px"><button class="btn" id="more">Load more (${fmt.int(d.total - d.offset - d.items.length)} left)</button></div>` : "";
+      const head = `<p class="muted small" style="padding:8px 14px;margin:0">${fmt.int(d.total)} speeches</p>`;
+      if (reset) $("list").innerHTML = head + html + more;
+      else { $("more")?.parentElement.remove(); $("list").insertAdjacentHTML("beforeend", html + more); }
+      if ($("more")) $("more").onclick = () => { state.offset += 50; loadList(false); };
+    }
+    markCurrent();
+  } catch (e) { $("list").innerHTML = `<p class="banner err">${esc(e.message)}</p>`; }
+}
+$("list").addEventListener("click", ev => {
+  const it = ev.target.closest(".item"); if (it) openSpeech(it.dataset.id, it.dataset.seq);
+});
+function markCurrent() { document.querySelectorAll(".item").forEach(i => i.classList.toggle("on", i.dataset.id === state.current)); }
+
+async function openSpeech(id, seq) {
+  state.current = id; markCurrent();
+  const u = new URL(location); u.searchParams.set("speech", id); history.replaceState(null, "", u);
+  $("reader").innerHTML = `<p class="muted">Loading …</p>`;
+  try {
+    const s = await api("speech", { id });
+    $("reader").innerHTML = `
+      <div class="chart-head"><div>
+        <h2 style="margin:0">${esc(s.name)}</h2>
+        <div class="t" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${partyTag(s.party)}
+          <span class="tag">${s.gov ? "government party" : "opposition"}</span><span class="tag">${esc(s.role)}</span>
+          ${s.main ? `<span class="tag">climate main topic</span>` : ""}</div></div>
+        <div class="filters"><button class="btn" id="prev" ${s.prev ? "" : "disabled"}>← previous</button>
+          <button class="btn" id="next" ${s.next ? "" : "disabled"}>next →</button></div></div>
+      <p class="muted small">${s.date} · ${s.lp}th Bundestag, session ${s.session} · ${s.n} sentences, ${s.hits} climate-relevant
+        ${s.topic ? `<br>Agenda: ${esc(s.topic)}` : ""}<br><code>${esc(s.id)}</code></p>
+      <div class="legend-h"><span class="l1">climate-relevant (keyword)</span><span class="l2">sceptic marker</span><span class="l3">energy term</span></div>
+      ${s.sentences.map(x => `<p class="sent ${x.relevant ? "rel" : ""} ${x.sceptic ? "sc" : ""} ${x.energy ? "en" : ""}" data-seq="${x.seq}"
+          ${x.matched ? `title="matched: ${esc(x.matched)}"` : ""}>${esc(x.text)}${x.matched ? `<span class="m">[${esc(x.matched)}]</span>` : ""}</p>`).join("")}`;
+    $("prev").onclick = () => openSpeech(s.prev);
+    $("next").onclick = () => openSpeech(s.next);
+    $("reader").scrollTop = 0;
+    if (seq != null) {
+      const el = $("reader").querySelector(`.sent[data-seq="${seq}"]`);
+      if (el) { el.classList.add("focus"); $("reader").scrollTop = el.offsetTop - 120; }
+    }
+  } catch (e) { $("reader").innerHTML = `<p class="banner err">${esc(e.message)}</p>`; }
+}
+
+// ------------------------------------------------------------ init
+(async () => {
+  try {
+    const d = await api("monthly", {}, () => $("status").innerHTML = `<div class="banner">Loading the corpus on the server (first start writes a cache, 1–2 min) …</div><br>`);
+    $("status").innerHTML = "";
+    M = d.monthly; PM = d.party_monthly;
+    const terms = Object.keys(M[0]).filter(k => k.startsWith("trends_")).map(k => k.slice(7));
+    $("term").innerHTML = terms.map(t => `<option ${t === "Klimawandel" ? "selected" : ""}>${t}</option>`).join("");
+    $("term").onchange = drawSignals;
+    const ov = await api("overview");
+    $("party").innerHTML += ov.parties.map(p => `<option>${esc(p)}</option>`).join("");
+    seg($("smooth"), v => { smooth = v === "1"; drawSignals(); });
+    seg($("pmetric"), v => { pmetric = v; drawParties(); });
+    seg($("mode"), v => { setMode(v); loadList(true); });
+    drawSignals(); drawParties();
+    if (P.get("climate")) $("climate").value = P.get("climate");
+    if (P.get("party")) $("party").value = P.get("party");
+    let t;
+    $("q").oninput = () => { clearTimeout(t); t = setTimeout(() => loadList(true), state.mode === "search" ? 500 : 250); };
+    ["party", "from", "to", "climate", "gov", "sort"].forEach(id => $(id).onchange = () => loadList(true));
+    await loadList(true);
+    if (state.current) openSpeech(state.current);
+    if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+  } catch (e) { $("status").innerHTML = `<div class="banner err">${esc(e.message)}</div>`; }
+})();
+</script>
+</body>
+</html>

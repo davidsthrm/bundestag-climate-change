@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Hub</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .hero { display: grid; gap: 8px; margin-bottom: 20px; }
+  .hero p { margin: 0; max-width: 760px; }
+  .links { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 20px 0; }
+  .link { display: block; color: var(--ink); transition: border-color .15s; }
+  .link:hover { text-decoration: none; border-color: var(--accent); }
+  .link .k { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+  .link h2 { margin: 4px 0 6px; }
+  .link p { margin: 0; color: var(--ink-2); font-size: 14px; }
+  .two { grid-template-columns: 2fr 1fr; }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+  .files li { list-style: none; display: flex; gap: 8px; align-items: center; padding: 3px 0; font-size: 13px; }
+  .files ul { padding: 0; margin: 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <div class="muted small">University NLP module · student project · 2004 – today</div>
+    <h1>Heat Without Debate?</h1>
+    <p>Parliamentary attention to climate change in the German Bundestag, month by month, next to the physical
+      climate signal and public attention. Research question and hypotheses: <a href="/repo/README.md">README</a>.</p>
+  </section>
+
+  <div id="status"></div>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="grid links">
+    <a class="card link" href="explorer.html"><div class="k">Explore</div><h2>Data &amp; speeches</h2>
+      <p>Monthly signals, party breakdown, and every speech with its climate sentences highlighted. Full-text search.</p></a>
+    <a class="card link" href="results.html"><div class="k">Numbers</div><h2>Results</h2>
+      <p>Key numbers per CRISP-DM phase and all generated tables and figures in <code>results/</code>.</p></a>
+    <a class="card link" href="board.html"><div class="k">Work</div><h2>Board</h2>
+      <p>GitHub issues as a kanban board: backlog, in progress, in review, done; linked pull requests.</p></a>
+    <a class="card link" href="slides.html"><div class="k">Talk</div><h2>Slides</h2>
+      <p>The Marp presentation in <code>slides/</code>, rendered live from the Markdown.</p></a>
+  </div>
+
+  <div class="grid two">
+    <div class="card">
+      <div class="chart-head"><h3>Bundestag: share of climate-relevant sentences</h3>
+        <span class="muted small">12-month average · monthly in grey</span></div>
+      <div id="spark"></div>
+    </div>
+    <div class="card files">
+      <h3>Pipeline outputs</h3>
+      <ul id="files"></ul>
+      <p class="muted small" id="git"></p>
+    </div>
+  </div>
+</main>
+<script>
+(async () => {
+  const st = document.getElementById("status");
+  const ov = await api("overview");
+  document.getElementById("files").innerHTML = Object.entries(ov.files).map(([f, ok]) =>
+    `<li><span class="dot" style="background:${ok ? "var(--good)" : "var(--axis)"}"></span>
+     <code>${esc(f.replace("data/", ""))}</code><span class="muted">${ok ? "" : "not built yet"}</span></li>`).join("");
+  document.getElementById("git").textContent = `Branch ${ov.branch} · ${ov.commit}`;
+  if (!ov.ready) st.innerHTML = `<div class="banner ${ov.error ? "err" : ""}">${ov.error ? esc(ov.error) :
+    "Loading the corpus (first start writes a text cache, about 1–2 min) …"}</div><br>`;
+  const d = await api("monthly", {}, () => {});
+  st.innerHTML = "";
+  const o = await api("overview");
+  document.getElementById("tiles").innerHTML = [
+    [fmt.int(o.speeches), "speeches"],
+    [(o.sentences / 1e6).toFixed(2) + " M", "speech sentences"],
+    [fmt.int(o.relevant), `climate-relevant sentences (${fmt.pct(o.relevant / o.sentences)})`],
+    [fmt.int(o.main_topic), "speeches with climate as main topic"],
+    [d.monthly.length, `months, ${o.first_month} to ${o.last_month}`],
+  ].map(([v, l]) => `<div class="tile"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  const x = d.monthly.map(r => r.month), share = d.monthly.map(r => r.share);
+  lineChart(document.getElementById("spark"), {
+    x, height: 200, yFmt: v => (v * 100).toFixed(1) + "%", tipFmt: v => fmt.pct(v),
+    series: [{ name: "monthly", values: share, color: "var(--axis)", width: 1.5 },
+             { name: "12-month average", values: rolling(share), color: "var(--s1)" }],
+    onClick: m => location.href = `explorer.html?month=${m}&climate=relevant#speeches`,
+  });
+})().catch(e => document.getElementById("status").innerHTML = `<div class="banner err">${esc(e.message)}</div>`);
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Issue Board</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .board { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 12px; overflow-x: auto; align-items: start; }
+  .col { background: var(--surface-2); border-radius: var(--radius); padding: 10px; min-height: 120px; }
+  .col h3 { display: flex; justify-content: space-between; margin: 2px 4px 10px; }
+  .col h3 .muted { font-weight: 500; }
+  .icard { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; color: var(--ink); }
+  .icard:hover { text-decoration: none; border-color: var(--accent); }
+  .icard.flash { outline: 2px solid var(--accent); }
+  .icard .ti { font-weight: 550; margin: 2px 0 6px; }
+  .icard .meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; }
+  .ph { --c: var(--ink-2); }
+  .ph::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 5px; }
+  .prs { margin-top: 6px; font-size: 12px; }
+  .prs a { display: block; }
+  @media (max-width: 1000px) { .board { grid-template-columns: repeat(4, 260px); } }
+</style>
+</head>
+<body>
+<main class="stack">
+  <div class="chart-head">
+    <div><h1>Board</h1>
+      <p class="muted small" style="margin:0">Columns are derived from GitHub: <b>Done</b> = closed;
+        <b>In review</b> = open pull request that references the issue (closing keyword or <code>(#N)</code> in its title);
+        <b>In progress</b> = assigned; <b>Backlog</b> = the rest. Click a card to open it on GitHub.</p></div>
+    <div class="filters"><span class="muted small" id="fetched"></span><button class="btn" id="refresh">Refresh</button></div>
+  </div>
+  <div class="chips" id="phases"></div>
+  <div id="out"></div>
+  <div class="card"><h3>Open pull requests</h3><div id="prs" class="small"></div></div>
+</main>
+<script>
+const COLS = [["backlog", "Backlog"], ["progress", "In progress"], ["review", "In review"], ["done", "Done"]];
+// CRISP-DM phase -> colour (fixed by phase number)
+const PH_COLOR = { 1: "--s7", 2: "--s1", 3: "--s3", 4: "--s2", 5: "--s5", 6: "--s6" };
+const phaseOf = i => { const l = i.labels.find(l => l.name.startsWith("crisp-dm")); return l ? l.name.replace("crisp-dm: ", "") : "no phase"; };
+const phColor = p => `var(${PH_COLOR[p[0]] || "--ink-2"})`;
+let data, hidden = new Set();
+
+function draw() {
+  const openPRs = data.prs.filter(p => p.state === "OPEN");
+  const prsFor = n => data.prs.filter(p => p.refs.includes(n));
+  const cols = Object.fromEntries(COLS.map(([k]) => [k, []]));
+  for (const i of data.issues) {
+    if (hidden.has(phaseOf(i))) continue;
+    const k = i.state === "CLOSED" ? "done" : openPRs.some(p => p.refs.includes(i.number)) ? "review" : i.assignees.length ? "progress" : "backlog";
+    cols[k].push(i);
+  }
+  cols.done.sort((a, b) => (b.closedAt || "").localeCompare(a.closedAt || ""));
+  for (const k of ["backlog", "progress", "review"]) cols[k].sort((a, b) => phaseOf(a).localeCompare(phaseOf(b)) || a.number - b.number);
+  document.getElementById("out").innerHTML = `<div class="board">${COLS.map(([k, t]) => `<div class="col"><h3>${t}<span class="muted">${cols[k].length}</span></h3>
+    ${cols[k].map(i => {
+      const ph = phaseOf(i), prs = prsFor(i.number);
+      return `<a class="icard" id="i${i.number}" href="${esc(i.url)}" target="_blank" rel="noopener">
+        <div class="muted small">#${i.number}${i.state === "CLOSED" && i.closedAt ? " · closed " + i.closedAt.slice(0, 10) : ""}</div>
+        <div class="ti">${esc(i.title)}</div>
+        <div class="meta"><span class="tag ph" style="--c:${phColor(ph)}">${esc(ph)}</span>
+          ${i.labels.filter(l => !l.name.startsWith("crisp-dm")).map(l => `<span class="tag">${esc(l.name)}</span>`).join("")}
+          ${i.assignees.map(a => `<span class="tag">@${esc(a.login)}</span>`).join("")}</div>
+        ${prs.length ? `<div class="prs">${prs.map(p => `<span class="muted">PR #${p.number} · ${p.state.toLowerCase()}${p.isDraft ? " (draft)" : ""}${p.reviewDecision ? " · " + p.reviewDecision.toLowerCase().replace("_", " ") : ""}</span>`).join("<br>")}</div>` : ""}
+      </a>`; }).join("")}</div>`).join("")}</div>`;
+  document.getElementById("prs").innerHTML = openPRs.length ? openPRs.map(p => `<div style="padding:4px 0"><a href="${esc(p.url)}" target="_blank" rel="noopener">#${p.number} ${esc(p.title)}</a>
+    <span class="muted">· ${esc(p.author.login)} · <code>${esc(p.headRefName)}</code>${p.isDraft ? " · draft" : ""}${p.reviewDecision ? " · " + esc(p.reviewDecision.toLowerCase().replace("_", " ")) : ""}
+    ${p.refs.length ? " · refs " + p.refs.map(n => `#${n}`).join(", ") : ""}</span></div>`).join("") : `<span class="muted">none</span>`;
+  if (location.hash) { const c = document.querySelector(location.hash); if (c) { c.classList.add("flash"); c.scrollIntoView({ block: "center" }); } }
+}
+function drawChips() {
+  const phases = [...new Set(data.issues.map(phaseOf))].sort();
+  const el = document.getElementById("phases");
+  el.innerHTML = phases.map(p => `<button class="chip ${hidden.has(p) ? "off" : ""}" data-p="${esc(p)}" style="--c:${phColor(p)}"><span class="sw"></span>${esc(p)}</button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.onclick = () => { hidden.has(b.dataset.p) ? hidden.delete(b.dataset.p) : hidden.add(b.dataset.p); drawChips(); draw(); });
+}
+async function load(refresh) {
+  const out = document.getElementById("out");
+  try {
+    data = await api("board", refresh ? { refresh: 1 } : {});
+    document.getElementById("fetched").textContent = `from GitHub at ${data.fetched}`;
+    drawChips(); draw();
+  } catch (e) { out.innerHTML = `<div class="banner err">${esc(e.message)}<br><span class="small">The board uses the <code>gh</code> CLI; check <code>gh auth status</code>.</span></div>`; }
+}
+document.getElementById("refresh").onclick = () => load(true);
+load(false);
+</script>
+</body>
+</html>
